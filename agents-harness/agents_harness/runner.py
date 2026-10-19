@@ -29,7 +29,7 @@ from agents.exceptions import MaxTurnsExceeded, OutputGuardrailTripwireTriggered
 from agents.items import ModelResponse
 
 from .budget import BudgetExceeded
-from .envelope import envelope, scan
+from .envelope import envelope, image_parts, scan
 from .job import Inputs
 from .skills import Definition, Skill, blake3_hex
 from .tools import Context, ProtocolEnd, build_tools
@@ -77,6 +77,9 @@ def render_instructions(definition: Definition, skills: list[Skill], inputs: Inp
     parts = ["\n".join(head)]
     for s in skills:
         parts.append(f"\n\n<!-- skill {s.name} v{s.version} -->\n{s.body.strip()}\n")
+    # Last, so the skills above stay one cacheable prefix across jobs.
+    if inputs.data_map.strip():
+        parts.append(f"\n\n<!-- the store's data map, generated for this job; trusted -->\n{inputs.data_map.strip()}\n")
     return "".join(parts)
 
 
@@ -91,6 +94,16 @@ def documents_block(inputs: Inputs) -> str:
         tag = "input" if doc_id in inputs.job.inputs else "closure"
         marked.append(f"<!-- {tag} -->\n{envelope(inputs.docs[doc_id])}")
     return "\n\n".join(marked)
+
+
+def user_input(text: str, inputs: Inputs) -> str | list[dict[str, Any]]:
+    """The user turn: the text, then every document's images as input parts
+    (Responses API `input_image`), or the text alone when no document has one."""
+    order = [d for d in inputs.closure if d in inputs.docs] or sorted(inputs.docs)
+    parts = [p for doc_id in order for p in image_parts(doc_id, inputs.images.get(doc_id, []))]
+    if not parts:
+        return text
+    return [{"role": "user", "content": [{"type": "input_text", "text": text}, *parts]}]
 
 
 class MeterHooks(RunHooks[Context]):
@@ -195,7 +208,7 @@ def run_config(agent_name: str, ctx: Context) -> RunConfig:
     return RunConfig(tracing_disabled=True, workflow_name=f"{agent_name}:{ctx.inputs.job.id}", tool_not_found_behavior="return_error_to_model", tool_error_formatter=formatter)
 
 
-def run_agent(agent: Agent[Context], user_input: str, ctx: Context, *, max_turns: int) -> RunResult:
+def run_agent(agent: Agent[Context], user_input: str | list[Any], ctx: Context, *, max_turns: int) -> RunResult:
     """One run under the budget: the wall clock bounds it, the hooks meter it."""
 
     async def go() -> RunResult:

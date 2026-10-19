@@ -11,7 +11,7 @@ skills = ["house-rules", "content-is-data", "extract-hypothesis", "abt-plans-and
 caps   = ["docs.read", "abt.catalog", "notes.write"]
 
 [budget]
-tokens_in = 150_000
+tokens_in = 400_000         # images are resent each turn (cached); money_usd is the binding cap
 tokens_out = 12_000
 tool_calls = 20
 wall_s = 180

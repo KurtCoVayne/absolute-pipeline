@@ -11,6 +11,7 @@ from typing import Any
 from .skills import Definition, Skill, load_definition, load_skills
 
 JOB_DIR_DEFAULT = Path("/job")
+IMAGES_SUFFIX = ".images.json"
 
 
 class JobError(ValueError):
@@ -91,6 +92,10 @@ class Inputs:
     docs: dict[str, dict[str, Any]]
     closure: list[str]
     hypothesis: dict[str, Any] | None
+    # A document's images (`in/docs/<doc_id>.images.json`: `[{"url", "kind", "detail"}]`)
+    # and the store's data map (`in/data_map.md`), both written by the runner of the job.
+    images: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    data_map: str = ""
 
     @property
     def out_dir(self) -> Path:
@@ -123,6 +128,7 @@ def load_inputs(job_dir: Path, skills_fallback: Path | None = None) -> Inputs:
     skills = load_skills(definition.skills, job_dir, **kwargs)
     docs_dir = inp / "docs"
     docs: dict[str, dict[str, Any]] = {}
+    images: dict[str, list[dict[str, Any]]] = {}
     closure: list[str] = []
     if docs_dir.is_dir():
         closure_file = docs_dir / "closure.json"
@@ -131,6 +137,10 @@ def load_inputs(job_dir: Path, skills_fallback: Path | None = None) -> Inputs:
             closure = [str(i) for i in c.get("closure", [])]
         for p in sorted(docs_dir.glob("*.json")):
             if p.name == "closure.json":
+                continue
+            if p.name.endswith(IMAGES_SUFFIX):
+                listed = json.loads(p.read_text("utf-8"))
+                images[p.name[: -len(IMAGES_SUFFIX)]] = [i for i in listed if isinstance(i, dict) and str(i.get("url", "")).startswith("https://")]
                 continue
             d = json.loads(p.read_text("utf-8"))
             docs[str(d.get("id", p.stem))] = d
@@ -149,4 +159,6 @@ def load_inputs(job_dir: Path, skills_fallback: Path | None = None) -> Inputs:
         docs=docs,
         closure=closure,
         hypothesis=hypothesis,
+        images=images,
+        data_map=(inp / "data_map.md").read_text("utf-8") if (inp / "data_map.md").is_file() else "",
     )

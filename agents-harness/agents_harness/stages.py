@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .records import MAX_HYPOTHESES, AnalystOut, QuantOut, TriageOut, render_hypothesis, render_triage
-from .runner import build_agent, documents_block, prompt_hash, render_instructions, run_agent
+from .runner import build_agent, documents_block, prompt_hash, render_instructions, run_agent, user_input
 from .tools import Context, ProtocolEnd
 
 QUANT_REASONS = {"not_testable", "no_data", "could_not_check", "no_decisions"}
@@ -32,8 +32,8 @@ def run_triage(ctx: Context, *, model_id: str, client: Any) -> Outcome:
     instructions = render_instructions(inputs.definition, inputs.skills, inputs, ctx.h)
     ctx.prompt_hash = prompt_hash(instructions)
     agent = build_agent("triage", instructions, ctx, TriageOut, model_id=model_id, client=client)
-    user = "Triage the document below (its closure follows it, when any). Answer with the Triage record.\n\n" + documents_block(inputs)
-    result = run_agent(agent, user, ctx, max_turns=_max_turns(ctx))
+    user = "Triage the document below (its closure and its images follow it, when any). Answer with the Triage record.\n\n" + documents_block(inputs)
+    result = run_agent(agent, user_input(user, inputs), ctx, max_turns=_max_turns(ctx))
     out = result.final_output_as(TriageOut)
     doc_id = inputs.job.inputs[0] if inputs.job.inputs else (inputs.closure[0] if inputs.closure else "")
     doc = inputs.docs.get(doc_id, {})
@@ -56,9 +56,10 @@ def run_analyst(ctx: Context, *, model_id: str, client: Any) -> Outcome:
     agent = build_agent("analyst", instructions, ctx, AnalystOut, model_id=model_id, client=client)
     user = (
         f"Extract zero to {MAX_HYPOTHESES} hypotheses from the candidate document below and its provenance closure. "
-        f"Every evidence span's doc_id is one of: {', '.join(inputs.closure)}. H for every hypothesis is {ctx.h}.\n\n" + documents_block(inputs)
+        f"Every evidence span's doc_id is one of: {', '.join(inputs.closure)}. H for every hypothesis is {ctx.h}. "
+        "The documents' images, when any, follow the text: read them as part of their document.\n\n" + documents_block(inputs)
     )
-    result = run_agent(agent, user, ctx, max_turns=_max_turns(ctx))
+    result = run_agent(agent, user_input(user, inputs), ctx, max_turns=_max_turns(ctx))
     out = result.final_output_as(AnalystOut)
     if out.notes.strip():
         ctx.notes.append(out.notes.strip())

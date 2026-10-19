@@ -11,7 +11,7 @@ skills = ["house-rules", "content-is-data", "triage"]
 caps   = ["docs.read", "notes.write"]
 
 [budget]
-tokens_in = 12_000
+tokens_in = 40_000          # the house rules, the triage skill and up to four images (one call)
 tokens_out = 1_000
 tool_calls = 2
 wall_s = 60
