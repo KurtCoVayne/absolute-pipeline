@@ -5,7 +5,7 @@ Oct 19, 2026 · The general guideline every agent of the pipeline loads; `agents
 Every rule says how it is held. **Enforced**: the kernel, the checker, the plan or the gateway makes the violation impossible. **Checked**: the harness or the report detects it and fails or flags the job. **Instructed**: the agent's responsibility; the reviewer audits it. Cross-references are to `docs/spec/` (`K-`, `Q-`, `D-`, `A-`) and to the plan (`PL-`).
 
 
-> This repository is the home of the pipeline's documents. Cross-references `A-`, `D-`, `K-`, `Q-`, `P-`, `M-`, `ST-`, `E-` and the paths `docs/spec/`, `docs/*.md`, `docs/iterations/`, `corpus-v2/` and `crates/` are to the `absolute-backtest` repository (branch `spec/three-layer-split`), where this document was first written on Oct 19, 2026; `PL-n` is this plan's own section n and the colleague's framework is `docs/references/quant-idea-backtest/`.
+> This repository is the home of the pipeline's documents. Cross-references `A-`, `D-`, `K-`, `Q-`, `P-`, `M-`, `ST-`, `E-` and the paths `docs/spec/`, `docs/*.md`, `docs/iterations/`, `corpus-v2/` and `crates/` are to the `absolute-backtest` repository (branch `spec/three-layer-split`); `PL-n` is the plan's own section n and the colleague's framework is `docs/references/quant-idea-backtest/`.
 
 ---
 

@@ -18,7 +18,7 @@ The specification of the backtester itself (`docs/spec/`, the language, the form
 
 ## Layout to come
 
-As `docs/design/pipeline.md` section 3 lays it out: a Cargo workspace with `pipeline-wire`, `ingest-core`, `ingest-x`, `ingest-extract`, `ingest-fetch`, `agents-orchestrator`; `agents-skills/` (definitions in TOML, skills in Markdown); `agents-harness/` (Python, the OpenAI Agents SDK, run inside the sandbox); a Compose file for the one machine. `abt-gateway` and `abt-report` live in `absolute-backtest`, beside the three programs they front.
+As `docs/design/pipeline.md` section 3 lays it out: a Cargo workspace with `pipeline-wire`, `ingest-core`, `ingest-x`, `ingest-extract`, `ingest-fetch`, `agents-orchestrator`; `agents-skills/` (definitions in TOML, skills in Markdown); `agents-harness/` (Python, the OpenAI Agents SDK, run inside the sandbox); a Compose file for the one machine. `abt-gateway` and `abt-report` live here too, depending on `abt-wire` (and, for the gateway's in-process tests, on the three layer crates) as git dependencies pinned to a commit of `absolute-backtest`; the backtester's repository changes only by the plan's amendments (§8.1), each a pull request.
 
 ## Decisions that shape it
 

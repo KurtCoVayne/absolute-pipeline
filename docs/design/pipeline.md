@@ -7,7 +7,7 @@ This is a plan, not yet a build sheet: it fixes the architecture, the records, t
 The layers are numbered as the owner numbered them: **L1** ingest, **L2** agents, **L3** `absolute-backtest`.
 
 
-> This repository is the home of the pipeline's documents. Cross-references `A-`, `D-`, `K-`, `Q-`, `P-`, `M-`, `ST-`, `E-` and the paths `docs/spec/`, `docs/*.md`, `docs/iterations/`, `corpus-v2/` and `crates/` are to the `absolute-backtest` repository (branch `spec/three-layer-split`), where this document was first written on Oct 19, 2026; `PL-n` is this plan's own section n and the colleague's framework is `docs/references/quant-idea-backtest/`.
+> This repository is the home of the pipeline's documents. Cross-references `A-`, `D-`, `K-`, `Q-`, `P-`, `M-`, `ST-`, `E-` and the paths `docs/spec/`, `docs/*.md`, `docs/iterations/`, `corpus-v2/` and `crates/` are to the `absolute-backtest` repository (branch `spec/three-layer-split`); `PL-n` is the plan's own section n and the colleague's framework is `docs/references/quant-idea-backtest/`.
 
 ---
 
@@ -58,7 +58,7 @@ Content enters through source adapters, is stamped with a receipt time, hashed, 
 | The three programs | `abt-data`, `abt-kernel` (a pool of four), `abt-query` | the machine, `dedicated` profile (ST-9.2) | Rust |
 | Shared records and ids | `pipeline-wire` (depends on `abt-wire`) | — | Rust + FlatBuffers schema |
 
-[D] **A sibling repository `absolute-pipeline`** holds L1, L2 and `pipeline-wire`; `abt-gateway` and `abt-report` live in `absolute-backtest` (they link the layers' crates and deploy beside them). Rejected: everything in one workspace (the pipeline's dependencies, `rdkafka`, `reqwest`, container runtimes, have no place in the backtester's build, and the two deploy to different machines).
+[D] **This repository, `absolute-pipeline`, holds everything of the pipeline**: L1, L2, `pipeline-wire`, and also `abt-gateway` and `abt-report`, which depend on `abt-wire` (and, for the gateway's in-process tests, on the three layer crates) as git dependencies pinned to a commit of `absolute-backtest`. The backtester's repository changes only by the amendments of 8.1, each a pull request to `spec/three-layer-split`. Rejected: the gateway in the backtester's repository (the owner wants the pipeline in one place, and a pinned dependency is as close to the layers as a crate in their workspace); everything in one workspace (the pipeline's dependencies, `rdkafka`, `reqwest`, container runtimes, have no place in the backtester's build).
 
 [D] **One AWS machine for everything**, 32 GB: the three `abt` services in the `dedicated` profile, Redpanda, L1, the orchestrator and the sandboxes (the memory budget is 8.4's table; 16 GB holds the hot store and two kernels or the sandboxes, not both at the capacity asked). Rejected: two hosts (a TLS hop and two deployments for no gain while one machine suffices; P-2.1's remote deployment stays available); the M4 (its memory is spoken for, ST-9.2, and the owner asked for AWS).
 
