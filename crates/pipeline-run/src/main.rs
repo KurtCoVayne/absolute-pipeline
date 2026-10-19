@@ -79,6 +79,11 @@ enum Cmd {
         /// Only these post ids (comma-separated); all when empty.
         #[arg(long, default_value = "")]
         only: String,
+        /// Which triage verdicts go on to the analyst: `candidate` (the
+        /// feed's relevance gate, PL-5.5) or `none` (every post: a curated
+        /// campaign, PL-D12).
+        #[arg(long, default_value = "candidate")]
+        gate: String,
     },
     /// The static page.
     Page {
@@ -114,6 +119,7 @@ fn main() {
             cap_usd,
             campaign,
             only,
+            gate,
         } => run(RunCfg {
             queue,
             skills,
@@ -127,6 +133,7 @@ fn main() {
             cap_usd,
             campaign,
             only: only.split(',').filter(|s| !s.is_empty()).map(String::from).collect(),
+            gate,
         }),
         Cmd::Page { queue, out } => page(&queue, &out),
     };
@@ -138,11 +145,17 @@ fn main() {
 
 // ---------------------------------------------------------------- the file-backed queue
 
-/// Appends one JSON record as a line, synced (the queue's durability).
+/// One writer at a time on the queue's files.
+static APPEND: Mutex<()> = Mutex::new(());
+
+/// Appends one JSON record as a line, in one write under the queue's lock,
+/// synced (the queue's durability): concurrent jobs never interleave a line.
 fn append(queue: &Path, topic: &str, v: &Value) -> Result<(), String> {
     let p = queue.join(format!("{}.jsonl", topic));
+    let line = format!("{}\n", v);
+    let _g = APPEND.lock().unwrap_or_else(|e| e.into_inner());
     let mut f = OpenOptions::new().create(true).append(true).open(&p).map_err(|e| format!("{}: {}", p.display(), e))?;
-    writeln!(f, "{}", v).map_err(|e| e.to_string())?;
+    f.write_all(line.as_bytes()).map_err(|e| e.to_string())?;
     f.sync_data().map_err(|e| e.to_string())
 }
 
@@ -370,6 +383,7 @@ struct RunCfg {
     cap_usd: f64,
     campaign: String,
     only: Vec<String>,
+    gate: String,
 }
 
 #[derive(Clone)]
@@ -678,7 +692,7 @@ fn collect(cfg: &RunCfg, stage: &str, job_id: &str, doc: &Value, h: i64) -> Resu
                 t2["id"] = json!(id_of(&json!({"doc_id": doc["id"], "doc_version": 1, "model": t["model"], "prompt_hash": t["prompt_hash"], "verdict": verdict, "r": r})).hex());
                 append(&cfg.queue, "triage", &t2)?;
             }
-            if verdict == "candidate" {
+            if verdict == "candidate" || cfg.gate == "none" {
                 next.push(Work::Analyze { doc: doc.clone() });
             } else if first {
                 failure(

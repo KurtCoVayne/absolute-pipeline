@@ -41,7 +41,7 @@ services() {
 run() {
   nohup "$P/target/release/pipeline-run" run --queue "$Q" --skills "$P/agents-skills" --python $S/venv/bin/python --harness-dir "$P/agents-harness" \
     --gateway http://127.0.0.1:7777 --gateway-bin "$P/target/release/abt-gateway" --signing-key /etc/absolute-pipeline/token_signing_key \
-    --openai-key /etc/absolute-pipeline/openai_api_key --parallel ${PARALLEL:-14} --cap-usd ${CAP_USD:-50} --campaign seed-1 ${ONLY:+--only $ONLY} > "$LOGS/pipeline-run.log" 2>&1 &
+    --openai-key /etc/absolute-pipeline/openai_api_key --parallel ${PARALLEL:-14} --cap-usd ${CAP_USD:-50} --campaign seed-1 --gate ${GATE:-none} ${ONLY:+--only $ONLY} > "$LOGS/pipeline-run.log" 2>&1 &
   echo "pipeline-run started"
   ( while pgrep -f "pipeline-run run" >/dev/null; do "$P/target/release/pipeline-run" page --queue "$Q" --out $S/site/index.html 2>/dev/null; sleep 30; done
     "$P/target/release/pipeline-run" page --queue "$Q" --out $S/site/index.html ) > /dev/null 2>&1 &

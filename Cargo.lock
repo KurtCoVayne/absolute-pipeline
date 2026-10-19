@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "abt"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "abt-data",
  "abt-kernel",
@@ -19,12 +19,12 @@ dependencies = [
 [[package]]
 name = "abt-agg"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 
 [[package]]
 name = "abt-codec"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "abt-agg",
 ]
@@ -32,7 +32,7 @@ dependencies = [
 [[package]]
 name = "abt-data"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "abt-agg",
  "abt-codec",
@@ -76,7 +76,7 @@ dependencies = [
 [[package]]
 name = "abt-kernel"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "abt-agg",
  "abt-wire",
@@ -89,7 +89,7 @@ dependencies = [
 [[package]]
 name = "abt-query"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "abt-wire",
  "arrow",
@@ -124,7 +124,7 @@ dependencies = [
 [[package]]
 name = "abt-tests"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "abt",
  "abt-data",
@@ -138,7 +138,7 @@ dependencies = [
 [[package]]
 name = "abt-wire"
 version = "0.2.0"
-source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
+source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=9d69523#9d695237d01af2baa5bca0a5054c4325e49d2e3f"
 dependencies = [
  "arrow",
  "blake3",

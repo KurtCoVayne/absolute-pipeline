@@ -15,11 +15,11 @@ license = "MIT"
 pipeline-wire = { path = "crates/pipeline-wire" }
 ingest-core = { path = "crates/ingest-core" }
 # absolute-backtest, pinned (PL-3); the pull request of the amendments moves the rev.
-abt-wire = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "a4128ca" }
-abt-data = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "a4128ca" }
-abt-kernel = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "a4128ca" }
-abt-query = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "a4128ca" }
-abt-tests = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "a4128ca" }
+abt-wire = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-data = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-kernel = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-query = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-tests = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
 arrow = { version = "60", default-features = false, features = ["ipc"] }
 blake3 = { version = "1.8", default-features = false, features = ["std", "pure"] }
 planus = "1.3.0"

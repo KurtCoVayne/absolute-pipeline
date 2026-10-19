@@ -391,6 +391,9 @@ pub fn kernel_request(op: KernelOp) -> KernelRequest {
         run_id: None,
         text: None,
         to_seq: None,
+        // `holdout after TIME`'s truncation (E-97) is the query layer's to
+        // set from the plan; a run the gateway re-creates keeps the plan's.
+        received_by: None,
         start: None,
         end: None,
         memory_budget: None,
