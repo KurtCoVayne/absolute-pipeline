@@ -23,6 +23,15 @@ use abt_query::service::QueryService;
 use biscuit_auth::KeyPair;
 use serde_json::Value as Json;
 
+/// The gateway's logs on stderr (once; `RUST_LOG` filters).
+pub fn logs() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")))
+        .with_writer(std::io::stderr)
+        .with_test_writer()
+        .try_init();
+}
+
 /// A day's instant from its civil date.
 pub fn day(y: i64, m: u32, d: u32) -> i64 {
     abt_kernel::data::business_days((y, m, d), 1)[0]

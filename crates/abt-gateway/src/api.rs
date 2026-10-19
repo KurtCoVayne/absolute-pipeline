@@ -889,7 +889,7 @@ impl Gateway {
         let mut reveals = Vec::new();
         if g.kind == Kind::Development {
             for step in g.study.reveal_steps() {
-                match self.layers.plan(&["reveal", &step, "--threads", &threads], &text, g.sources.clone(), &g.name) {
+                match self.layers.plan(&["reveal", "plan", &step, "--threads", &threads], &text, g.sources.clone(), &g.name) {
                     Ok(r) => {
                         let revealed = runs_of(&r);
                         self.jobs.record_plan(

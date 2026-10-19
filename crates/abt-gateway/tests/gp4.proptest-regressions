@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a05ec9ddec2ed768f899aed148a2f1cef7019a493c9b5e98234ab563459e1530 # shrinks to body = Object {"form": Object {"kind": String("point"), "relation": String("equity.close"), "t": Number(1638576000000000000)}, "r_max": Number(1661986800000000000)}

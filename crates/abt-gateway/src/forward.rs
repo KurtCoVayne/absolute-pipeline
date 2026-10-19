@@ -285,7 +285,7 @@ fn reveal_one(layers: &Layers, cfg: &Config, s: &Stored, last: Option<&StoredOut
     if !ran {
         layers.plan(&["run"], &plan_text, sources.clone(), &name).map_err(|e| format!("the forward plan's run: {}", e))?;
     }
-    let ex = layers.plan(&["reveal", &step], &plan_text, sources.clone(), &name).map_err(|e| format!("the reveal: {}", e))?;
+    let ex = layers.plan(&["reveal", "plan", &step], &plan_text, sources.clone(), &name).map_err(|e| format!("the reveal: {}", e))?;
     let runs = runs_of(&ex);
     let revealed = ex["outcomes"].as_array().into_iter().flatten().find(|o| o["kind"] == "reveal").cloned().unwrap_or(Value::Null);
     let window = revealed["window"]
