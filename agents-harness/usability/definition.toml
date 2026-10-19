@@ -1,0 +1,22 @@
+# The usability task's agent (GP-5, PL-6.2's exception): writes R8L from the docs
+# with the language skills and a `check` tool only. Not a pipeline stage; the
+# runner in this directory builds its job and runs it through the same harness.
+# knowledge_cutoff as the quant's (May 18, 2026, https://developers.openai.com/api/docs/models/gpt-6-luna).
+
+[agent]
+name   = "usability"
+stage  = "usability"
+model  = { provider = "openai", id = "gpt-6-luna", knowledge_cutoff = "2026-05-18" }
+skills = ["abt-language", "abt-idioms"]
+caps   = ["abt.check", "notes.write"]
+
+[budget]
+tokens_in = 600_000
+tokens_out = 80_000
+tool_calls = 40
+wall_s = 1800
+money_usd = 0.50
+checks = 30
+
+[output]
+records = []

@@ -49,6 +49,7 @@ class Gateway:
         self._sleep = sleep
         self._max_attempts = max_attempts
         self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.answers: list[Any] = []  # parallel to `calls`: the result, or the error as the model saw it
 
     def close(self) -> None:
         self._client.close()
@@ -56,6 +57,13 @@ class Gateway:
     def call(self, route: str, body: dict[str, Any]) -> Any:
         """The `result` of an `ok` answer, or `GatewayError`."""
         self.calls.append((route, body))
+        try:
+            return self._call(route, body)
+        except GatewayError as e:
+            self.answers.append(e.for_model())
+            raise
+
+    def _call(self, route: str, body: dict[str, Any]) -> Any:
         url = f"{self.base_url}/v1/{route}"
         headers = {"Authorization": f"Biscuit {self.token}", "Content-Type": "application/json"}
         delay = 0.5
@@ -75,8 +83,12 @@ class Gateway:
                 self._sleep(wait)
                 delay = min(delay * 2, 30.0)
                 continue
-            return self._answer(route, resp)
+            return self._record(self._answer(route, resp))
         raise GatewayError("busy", f"{route}: the gateway stayed busy ({resp.status_code})", resp.status_code)
+
+    def _record(self, answer: Any) -> Any:
+        self.answers.append(answer)
+        return answer
 
     @staticmethod
     def _answer(route: str, resp: httpx.Response) -> Any:
