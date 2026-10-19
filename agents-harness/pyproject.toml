@@ -1,0 +1,36 @@
+[project]
+name = "agents-harness"
+version = "0.1.0"
+description = "The pipeline's agent harness: one job in a sandbox on the OpenAI Agents SDK"
+requires-python = ">=3.12"
+dependencies = [
+  "openai-agents==0.24.0",
+  "openai>=3.35,<4",
+  "pydantic>=2.11,<3",
+  "httpx>=0.28,<1",
+  "blake3>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9,<10", "ruff>=0.17,<1"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agents_harness*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: calls the real OpenAI API with the key in SECRETS/openai_api_key"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 200
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "BLE"]
+ignore = ["E501"]

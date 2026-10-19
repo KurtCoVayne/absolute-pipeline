@@ -1,0 +1,25 @@
+# The quant (PL-6.2, PL-6.5): one Hypothesis with its documents in, one Submission out (or a
+# reasoned failure). The small model by the owner's rule; the quant moves to the mid model
+# (gpt-6.1-sol, money_usd = 2.00) only if GP-5's task fails on the small one.
+# knowledge_cutoff: May 18, 2026, as OpenAI's model page states it ("May 18, 2026 knowledge
+# cutoff", https://developers.openai.com/api/docs/models/gpt-6-luna, read on Oct 19, 2026).
+
+[agent]
+name   = "quant"
+stage  = "strategize"
+model  = { provider = "openai", id = "gpt-6-luna", knowledge_cutoff = "2026-05-18" }
+skills = ["house-rules", "content-is-data", "abt-language", "abt-idioms", "abt-plans-and-claims", "write-strategy", "read-results"]
+caps   = ["docs.read", "abt.catalog", "abt.query", "abt.check", "abt.plan", "abt.report", "abt.query_run", "abt.submit", "notes.write"]
+
+[budget]
+tokens_in = 400_000
+tokens_out = 60_000
+tool_calls = 100
+wall_s = 1500
+money_usd = 0.25
+plan_runs   = 4          # plan executions the gateway admits in this job: the translation check, the development plan, one retry or one execution-variant plan, and the forward plan's check
+grid_points = 25         # the sensitivity grid's size
+checks      = 8          # abt check iterations before the job fails as could_not_check
+
+[output]
+records = ["Submission"]
