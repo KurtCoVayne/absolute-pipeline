@@ -1,119 +1,126 @@
 ---
 name: abt-idioms
-version: 1
+version: 2
 ---
 # abt idioms and pitfalls
 
-What small models got wrong writing `abt` from the docs alone (`docs/llm-usability.md`, "Where the language and its tools fall short"), and the idiom that is right in the second formulation. Read this after `abt-language` and before writing a rule.
+The forms that work on this store, each checked clean with `abt check` on it (Oct 19, 2026); the run status of each is in its heading. And the mistakes small models make. Read after `abt-language`.
 
-## 1. There are no modes. Group with `within`.
+## 1. Daily futures: decide on each root's sessions (checked and run: ES, 2018 to 2026, decides)
 
-The first formulation had `+A`/`-A` annotations and the error `'+A' of 'X' is an input and must be bound before the call` cost eight of twelve runs. The second formulation has **no modes on identity arguments**: entity and key arguments may be bound or free at any call. What the modes also did silently, choosing the group of a rank, is now written:
-
-```
-rel ranked(A: Equity, @T, K: Count)
-ranked(A, T, K) :- bar(T), K = rank(score(A, T, S) by (S desc, A asc)) within (T).
-```
-
-`within (T)` ranks every `A` at the bar. `within (A, T)` would rank one tuple and every rank would be 1 (the Haiku failure: the liquidity decile never held). The rule: **the variables that vary inside the reduction are not in `within`; the ones held fixed are.** `rank`, `rank_average` and `top[k]` require `within`; `count`, `sum`, `mean` over a cross-section take it too (`N = count(A) over (long_leg(A, T)) within (T)`).
-
-Bracketed parameters (`sma[N]`, `mean_rows[20, close]`) are inputs and are always bound by the caller; never put a variable there that nothing binds.
-
-## 2. Silent emptiness: a clean check is not a working program
-
-A strategy can check clean and decide nothing. **`decisions = 0` is a failure, never a result.** Every Haiku book did it, and each time one construct left the decision rule empty:
-
-- a wrong label (`member(A, T, "SP500")` when the vocabulary is `"SPX"`): WF-15 now checks label literals against the catalog, but only for the labels you *write*; read `schema("equity")` for the vocabulary;
-- a window that can never fill (`window[20d] min 20` over sessions: twenty calendar days hold about fourteen bars; `window[0d] min 20`);
-- a join on the wrong key (daily features read at a minute bar without `asof`/the session calendar);
-- a base case at the first bar of the whole dataset instead of the entity's first row;
-- a guard that excludes everything (`abs(X) > 0` where X is exactly 0 by construction).
-
-How to detect it, every time, before reading any metric:
-1. after a `plan_run`, read `runs[].decisions` in the result: every `run` step must have `decisions > 0`;
-2. if one has 0, ask the kernel: `query_run(run_id, "coverage over <window>")` prints the first relation on every path to `decide` that is empty, with its `why not` at the first bar; then `query_run(run_id, "why not decide(T, _) at <a bar you expected a trade>")`;
-3. fix the rule the report names; do not change the idea to make something fire.
-
-## 3. The previous own row
-
-`prev(T, T0)` steps the **decision calendar**, not the entity's rows. An entity that has no bar at `T0` (a holiday on one exchange, a stock listed later) gets nothing from `close(A, T0, P)`. The first formulation's idiom was `prev` plus an `asof` read of the entity's own relation; the second formulation has it in the library:
+A daily futures program decides at each root's session close, on the session calendar, and reads the bars through their `@session` views (WF-16 refuses `close(A, T, P)` keyed on a session):
 
 ```
-prev_row(A, T, T1)   # the entity's previous own row (library calendar)
-first_row(A, T)      # its first row
-row_number(A, T, K)  # 0 at its first row
+data      { class future   need bars @1m from <window start - warm-up> complete   need sessions, point_value   require reviewed   prefer latest }
+uses      calendar, bars, book, state, stat
+calendars { session = sessions }
+clock     { decide on session }
+universe  { instruments { ES from <window start> }
+            universe(A, T) :- instruments(A, From), session(A, T, _), T >= From. }
+rules     { rel atr(A: Future, @T, V: Price<USD>)
+            atr(A, T, V) :- universe(A, T), V = mean(R) over (T1 in rows[atr_rows], true_range@session(A, T1, R)).
+            rel size(A: Future, @T, N: Quantity<Contracts>)
+            size(A, T, N) :- atr(A, T, V), V > 0 USD/contract, point_value(A, T, PV), PV > 0, N = risk / (stop_ix * V * PV). }
+decisions { silence hold   orders moo
+            decide(T, hold(A, N)) :- <entry>(A, T), flat(A, T), size(A, T, N).
+            decide(T, hold(A, 0 contracts)) :- held(A, T, _), <exit>(A, T). }
+execution futures_house with { orders moo }          # in a strategy named <slug>_moo: moo_moc is intraday (WF-14)
+report    { calendar session   periods 252 per year }
 ```
 
-Use `prev_row` for "yesterday's close of this market", for latches and for anything recursive per entity; use `prev` only for the book (`nav`, `position`) and for bar-level relations. **Never put a constant inside an `asof` pattern**: `R(A, T1, 5) asof T0` reads the latest row *with value 5*, which is not what anyone means, and it cost a run twenty minutes.
+- **Memory and time:** a run streams the minute bars from the `need`'s `from` date. Put `from` at the window's start less the warm-up the longest window needs, never years earlier. Name the roots in `instruments`.
+- `PV > 0`: a root's point value can be 0 in the store; without the guard the run halts on a division by zero.
+- Sizing (house rules §3): `risk = 7500 USD`, `stop_ix = 2`; `hold(A, N)` is a target in contracts; `hold(A, 0 contracts)` closes.
 
-Library recursions you should not rewrite: `cumsum[R]`, `cumprod[R]` (a product as a recursion, not a sum of logs), `ewm[λ, R]`, `latch[enter, stay]`, `bars_held`, `entry_price`, `high_since_entry`.
+## 2. Intraday: the session so far at a decision minute (checked; run pending)
 
-## 4. `rows` versus `window`
-
-- `rows[N]` is the entity's last N rows on the rule's calendar and **requires all N** unless you write `min K`. "ATR over the last 20 sessions" is `rows[20]` on the session calendar.
-- `window[δ]` is a calendar duration (`20d`, `3mo`, `1y`) and **always needs `min K`**. "The 52-week high" is `max_window[52w, 200, close]` or better `max_rows[250, close]` when the author counted bars.
-- `prior_window[δ]` and `prior_rows[N]` exclude the current bar: the breakout's prior high.
-- The checker warns (W7) when a calendar window's `min K` exceeds the bars its duration can hold; a `window[0d]` is an error.
-- When the author says "20 days", decide whether they meant 20 bars (almost always) and write `rows[20]`.
-
-## 5. Units and typed zeros
-
-Values carry dimensions (F-9): `Price<USD>`, `Quantity<Contracts>`, `Notional<USD>`, `Scalar`, `Count`, `Duration`. The checker rejects `Count × Scalar` and `ATR > 0`:
-
-- a dimensioned comparison needs a typed zero: `V > 0 USD/contract`, `Q > 0 units`, `N > 0 shares`;
-- a price ratio is a `Scalar` (`P / P0 - 1`), a price difference a `Price`; `log` and `exp` take a `Scalar` (`log(P / P0)`, never `log(P)`);
-- `Price × Quantity = Notional`; `Notional / (Price × Scalar)` is a `Quantity` when the point value multiplies the price: `N = risk / (V * PV)` with `V: Price<USD>` and `PV: Scalar` gives contracts;
-- literals: `100 shares`, `2 contracts`, `1_000_000 USD`, `60 USD/share`, `0 USD/contract`, `20d`, `3mo`, `30min`, `0.02`, `"SPX"`;
-- **do not remove a guard to silence a type error; type it.**
-
-On continuous futures (house rules §7): signals in points or ATR units, never `%` returns, ratios or logs of a back-adjusted level (it can be negative).
-
-## 6. No disjunction, no conditional expression
-
-There is no `or`, no `;`, no `if … else`, no `not (A, B)`, no `-T`. Write:
-
-- **one rule per alternative** for a disjunction: `aligned(A, T) :- signal(…, G, …), abs(G) < 1.` and `aligned(A, T) :- signal(…, M, G, …), G * M > 0.`;
-- a **`case` form** for a conditional value, with complementary guards:
-  `Dir = case { abs(M) >= 2 * Q, aligned(A, T) -> sign(M) ; abs(M) < 2 * Q, G <= -0.75 -> -1 }` (no `else` means "no value", never a stuck instance);
-- `sign(X)`, `greatest`, `least`, `clamp`, `abs` instead of branches;
-- a negation only over a **closed** relation (the universe, the book's `held`/`flat`, a library relation marked closed, a relation whose demand is `complete`); `not above(A, T0)` over a `close`-derived relation without `complete` is rejected (N).
-
-## 7. Order does not matter; guard where you divide
-
-Bodies are conjunctions under Kleene's three-valued logic: a false guard excludes the instance wherever it is written, and a division by zero makes the instance **stuck** only when no guard excluded it. So guard in the rule that divides, and only there: a broad guard in a shared relation (`abs(C30 - O0) > 0` in `signal`) lost 167 legs that never divided.
-
-## 8. Calendars and resolution
-
-Two resolutions never meet "only through `resample`": a relation declares its calendar on the head (`rel atr(A: Future, @S: session, V: Price<USD>)`), a rule at a finer calendar reads a coarser relation **as of** the bar, and the bar views `close@session`, `high@weekly` are derived. For intraday: `clock { decide on base at session + 30min }`, features on `@S: session`, read at the decision bar through `session_of(A, T, S), prev(S, S1), atr(A, S1, V)`: **the previous session's** value, because the current session's own aggregate is not known intraday (WF-6 rejects reading it).
-
-Daily rules on a futures program: `need bars @1d` and `clock { decide on base }` with the base derived from the store's minute bars by the views; you do not write a `resample`.
-
-## 9. The executor's defaults are in the program
-
-Nothing comes from a flag. The house presets `futures_house` and `equities_house` (house rules §15) fix capital (fixed, no compounding), commissions, no slippage, fractional lots, unconstrained leverage, `actions apply`, `delisting last_price`. **Write `execution futures_house` (or `equities_house`)** and nothing else in that block unless you are writing a named single-field variant (`no_costs`, `moo`, `moc`). The harness refuses any other execution block. `report { calendar base   periods 252 per year }` for daily futures; `sessions of "ES"` for intraday.
-
-## 10. Environment vocabulary
-
-Read before writing: `schema("future")` for the primitives, `session`, `point_value`, `commission`, `member` and the lists the store holds; `schema("equity")` for `listed`, `member`'s lists (`"SPX"`, `"SP500"`, …), `delisted` reasons; `catalog("future")` for the roots and their spans; `resolve_symbols(["QQQ", "ES"])` for what the author's symbol is in the store. A label you did not see in the schema is wrong.
-
-## 11. The ATR and the sizing idiom (house rules §3)
+"Three green 5-minute bars in the first 30 minutes": decide 30 minutes after each session's open, reading the session so far as cumulative intervals `[0min, M)` (an interval starting after `0min`, `session(X, [5min, 10min))`, panics the kernel today: use `[0min, M)` only):
 
 ```
-rel atr(A: Future, @T, V: Price<USD>)
-atr(A, T, V) :- universe(A, T), V0 = mean(R) over (T1 in rows[20], true_range(A, T1, R)),
-    point_value(A, T, PV), V = greatest(V0, 10 * tick_size)          # tick from the catalog where held; else V = V0
-rel n_full(A: Future, @T, N: Quantity<Contracts>)
-n_full(A, T, N) :- atr(A, T, V), V > 0 USD/contract, point_value(A, T, PV), capital(T, C),
-    N = risk_pct * C / (stop_ix * V * PV).
+calendars { session = sessions   es_days = sessions of "ES" }
+clock     { decide on base at session + 30min }
+universe  { instruments { ES from <date> }   universe(A, T) :- instruments(A, From), session_of(A, T, _), T >= From. }
+rules {
+  rel atr(A: Future, @S: session, V: Price<USD>)
+  atr(A, S, V) :- session(A, S, _), V = mean(R) over (S1 in rows[atr_rows], true_range@session(A, S1, R)).
+  rel open0(A: Future, @X: base | session, O: Price<USD>)
+  open0(A, X, O) :- O = first(P) over (T1 in session(X, [0min, 1min)), open(A, T1, P)).
+  rel close_at[M: Duration](A: Future, @X: base | session, C: Price<USD>)
+  close_at[M](A, X, C) :- C = last(P) over (T1 in session(X, [0min, M)), close(A, T1, P)).
+  rel three_green(A: Future, @T, V: Price<USD>)     # each 5-minute close above the one before, the first above the open
+  three_green(A, T, V) :- universe(A, T), open0(A, T, O), close_at[5min](A, T, C1), close_at[10min](A, T, C2), close_at[15min](A, T, C3),
+      C1 > O, C2 > C1, C3 > C2, session_of(A, T, S), prev(S, S1), atr(A, S1, V), V > 0 USD/contract.   # the PREVIOUS session's ATR (WF-6)
+}
+decisions { silence flat   orders moo_moc   decide(T, hold(A, N)) :- three_green(A, T, V), point_value(A, T, PV), PV > 0, N = risk / (stop_ix * V * PV). }
+execution futures_house          # moo_moc on an intraday clock: enter at the next print, flat at the session's close
+report    { calendar es_days   periods 252 per year }
 ```
 
-`true_range` is in the `bars` library and uses `prev_row` (the previous own session's close). ATR20 includes the current bar, so it is known at the close and the decision fills at `moc` or at the next `moo`. `N_full` is fixed at the first fill of a trade: latch it (`entry_price`, `latch`) rather than recomputing it on scale-ins.
+A 5-minute bar's green test is its close above the previous 5-minute close (its open, up to the gap between prints): an approximation, stated as one. "A trend day up" then is the session's close above its open by k ATRs: `close@session(A, S, C), open@session …`; write the assumption.
 
-## 12. Before you call `check`, read your program once for
+## 3. Swings, Fibonacci and a mechanical Elliott wave 2 (checked; unverified: a year of BTC decided nothing, under investigation)
 
-- every block present (`data`, `uses`, `calendars` when needed, `clock`, `universe`, `params`, `rules`, `decisions`, `execution`, `report`);
-- every relation used is declared (`rel`) or from a `uses` module or the catalog;
-- every `need` the rules read (`bars`, `actions`, `listing`, `lists "…"`, `sessions`, `point_value`, `commission`);
-- `within` on every `rank`/`top`/cross-sectional aggregate;
-- typed zeros; `rows` where bars were meant; `prev_row` where the entity's own previous bar was meant;
-- a `decide` rule that can fire on the first day the data allows: no window longer than the history, no label you did not see in the schema.
+Pivots are confirmed k sessions late (causal); the last swing is an `asof` read of the pivot relation, which binds when it happened:
+
+```
+params { k : Count = 3 in 2..5   impulse : Scalar = 4 in 2..8   lo_fib : Scalar = 0.5   hi_fib : Scalar = 0.786 … }
+rel pivot_high(A: Future, @T, H: Price<USD>)        # the bar k back is the strict high of the last 2k+1
+pivot_high(A, T, H) :- universe(A, T), H = max(P) over (T1 in rows[2 * k + 1], high@session(A, T1, P)),
+    H1 = max(P) over (T1 in rows[k + 1], high@session(A, T1, P)), H2 = max(P) over (T1 in rows[k], high@session(A, T1, P)), H1 = H, H2 < H.
+rel swing_high(A: Future, @T, H: Price<USD>, At: Timestamp)
+swing_high(A, T, H, At) :- universe(A, T), pivot_high(A, At, H) asof T.
+# pivot_low / swing_low: the same with low@session, min, L1 = L, L2 > L.
+rel wave2_buy(A: Future, @T, V: Price<USD>)          # assumption: wave 1 = a low-to-high swing of >= impulse ATRs;
+wave2_buy(A, T, V) :- swing_high(A, T, H, TH), swing_low(A, T, L, TL), TL < TH, atr(A, T, V), V > 0 USD/contract,
+    (H - L) / V >= impulse, close@session(A, T, P), P <= H - lo_fib * (H - L), P >= H - hi_fib * (H - L).   # wave 2 = a 0.5-0.786 retracement
+```
+
+Exits: the wave-1 low broken (`swing_low(A, T, L, _), close@session(A, T, P), P < L`) or a new pivot high. A Fibonacci level is `H - f * (H - L)` (up swing) or `L + f * (H - L)` (down swing). Elliott counts are not unique: always state the mechanical reading as an assumption and test it; it is never a reason for `not_testable`.
+
+## 4. Calendar rules (checked; unverified: six months of ES decided nothing, under investigation)
+
+```
+rel mstart(@T)
+mstart(T) :- bar(T), month_start(T).                     # a derived relation over the builtin: closed, so it can be negated
+rel msess(A: Future, @T, K: Count)                       # the session's number in its month, 1 at the first
+msess(A, T, 1) :- universe(A, T), mstart(T).
+msess(A, T, K) :- universe(A, T), not mstart(T), prev_row(A, T, T0), msess(A, T0, K0), K = K0 + 1.
+rel mlen_prev(A: Future, @T, M: Count)                   # last month's session count, carried through this month
+mlen_prev(A, T, M) :- universe(A, T), mstart(T), prev_row(A, T, T0), msess(A, T0, M).
+mlen_prev(A, T, M) :- universe(A, T), not mstart(T), prev_row(A, T, T0), mlen_prev(A, T0, M).
+rel nth_last(A: Future, @T)                              # ASSUMPTION: this month has as many sessions as the last (±1-2)
+nth_last(A, T) :- msess(A, T, K), mlen_prev(A, T, M), K = M - nth + 1.
+```
+
+The store has no forward exchange calendar, so "the Nth-last session" is this labelled approximation; turn-of-month is `mstart` (the first session) and `nth_last` with `nth = 1`; hold for N sessions with `bars_held(A, T, B), B >= hold_n` (`uses state`). Day-of-week has no builtin: approximate a week's first session as the first after a gap of 2 days or more and say so.
+
+## 5. Weekly averages on daily bars (checked; run pending)
+
+```
+calendars { session = sessions   weekly = weeks(1) }
+rel wclose(A: Future, @W: weekly, P: Price<USD>)
+wclose(A, W, P) :- close@weekly(A, W, P).
+rel wema(A: Future, @W: weekly, E: Price<USD>)
+wema(A, W, E) :- ewm[ema_l, wclose](A, W, E).             # ema_l = 2 / (n + 1) as a param: a bracket takes a name or a number
+rel wnum(A: Future, @W: weekly, K: Count)
+wnum(A, W, K) :- wclose(A, W, _), row_number(A, W, K).
+rel wwma(A: Future, @W: weekly, M: Price<USD>)           # linear weights 1..n as Scalars (a Count becomes a Scalar only by division)
+wwma(A, W, M) :- wnum(A, W, K), SW = sum(P * ((J - K + n) / n)) over (W1 in rows[n], wclose(A, W1, P), wnum(A, W1, J)),
+    M = SW / ((n + 1) / 2).
+# read at a session: wwma(A, W, M) asof T
+```
+
+A 200-week average needs four years of warm-up: on this machine the window is at most three years, so say the average is shorter than the author's or use a weekly window that fits.
+
+## 6. Pitfalls that cost runs
+
+- **`decisions = 0` is a failure.** After every `plan_run` read `runs[].decisions`; on 0, `query_run(run_id, "coverage over <window>")` names the empty relation. A wrong label, a window that never fills, a base case at the dataset's first bar.
+- **Grouping**: `rank`, `top[k]` and cross-sectional `count/sum/mean` take `within (T)`: the variables held fixed; the ones that vary are not in it.
+- **Previous own row**: `prev_row(A, T, T1)` (library `calendar`), not `prev(T, T0)`, for "this market's previous bar". Never a constant inside an `asof` pattern.
+- **`rows[N]` vs `window[δ] min K`**: "20 days" means 20 bars, `rows[20]`; `prior_rows` excludes the current bar (breakouts).
+- **Units**: typed zeros (`0 USD/contract`, `0 contracts`, `0 units`); `Count × Price` is refused (divide first); `log` takes a Scalar. Type a guard, never delete it.
+- **No `or`, `;`, `if`**: one rule per alternative; `case { G1 -> e1 ; G2 -> e2 }`; `sign`, `greatest`, `least`, `clamp`.
+- **Negation** only over a closed relation (the universe, `held`/`flat`, a builtin-derived relation like `mstart`, primitives under `complete`). A relation derived through an aggregate is not closed: use an `asof` read instead of `not R(…)`.
+- **Bracket arguments** are names or numbers: `ewm[ema_l, wclose]`, not `ewm[2 / (n + 1), wclose]`.
+- **Guard where you divide**, not in a shared relation.
+- **Literal choices** belong in `params` (W5); the `instruments` table is warned (W9) and fine.

@@ -1,38 +1,27 @@
 ---
 name: read-results
-version: 1
+version: 2
 ---
 # Read the results
 
 What `plan_run`, `plan_report` and `query_run` give you and how to read them without charity. Read the counts first, the verdicts second, the metrics last.
 
-## 1. `plan_run`'s answer
+## 1. `plan_run`'s answer (compact)
 
 ```
-{"plan_hash": "…", "runs": [{"step": "base", "run_id": "…", "status": "ok|halted|failed", "decisions": 1234}, …], "report": {…}}
+{"plan_hash": "…", "runs": [{"step": "base", "run_id": "…", "status": "…", "decisions": 123}, …],
+ "report": {"outcomes": [{"step", "point", "run_id", "returns": {n, total_return, cagr, volatility, sharpe, max_drawdown, max_drawdown_duration},
+                          "trading": {decisions, fills, turnover, dropped}, "trades": {…}}], "grids": …, "dsr": …, "trial_kinds": …,
+            "reveal": [the out-of-sample outcome], "warnings": [...]}}
 ```
 
-- `decisions` per run step: **0 is a failure** (`abt-idioms` §2). Check every `run` step; a grid cell with 0 is a cell to explain.
-- `status = halted`: the kernel stopped (a stuck instance in a demanded rule, `oversize halt`, `ruin halt`); `query_run(run_id, "trace decide at <last bar>")` says where. `failed`: the plan's own error, in `report.text`.
-- The `report` member is the same object `plan_report(plan_hash)` returns; read it below.
+- `decisions` per run step: **0 is a failure** (`abt-idioms` §6); a grid cell with 0 is a cell to explain.
+- In-sample is the `base` outcome; out-of-sample is `reveal` (the trailing 20 %, revealed once); the grid's cells are the other outcomes.
+- `max_drawdown` is a share of the fixed 1,000,000 USD base; `cagr` and `total_return` are on that base (no compounding).
 
-## 2. `plan_report`'s tables
+## 2. `plan_report(plan_hash)`
 
-Every table is `{"columns": [...], "rows": [[...]], "truncated": bool}`; at most 500 rows (narrow a query rather than page).
-
-| Table | Columns, what to read |
-| --- | --- |
-| `summary` | one row per run step and per window (`full`, `insample`, `oos`): `return` (a year, % of the fixed base), `volatility`, `sharpe`, `mar`, `max_drawdown` (% of capital), `drawdown_duration` (years), `trades`, `profit_factor`, `hit_rate`, `avg_win_loss`, `avg_trade` (USD, beside the round-turn cost), `decisions`. The in-sample row is what the grid saw; the `oos` row is the one reveal |
-| `trials` | `kind` (`run`, `grid`, `reveal`, `test`, `claim`), `count`, `var_sharpe`: the lineage's count the DSR used. Quote `trials` and `dsr` in the rationale |
-| `claims` | `name`, `test@version`, `phase`, `verdict` (`holds`, `fails`, `undecidable(reason)`), `statistic`, `p`, `p_adjusted`, `interval`; the (in-sample, out-of-sample) pair after a reveal. An `undecidable` is not a pass: read its reason (an empty input is usually `decisions = 0` or a window inside the embargo) |
-| `contract` | the kernel's contract statuses (K-3.7) per clause: `held`, `violated`, `not_applicable`: survivorship (`member`, `delisted` present for equities), causality, the cost model active, no fill outside a bar, `numerics exact`. A `violated` row is a bug to fix before reading a metric |
-| `warnings` | the run's warnings: `W8` never-fired relations on the path to `decide`, unreviewed data (`allow unreviewed`), a resolver choice, a stuck observed instance. Each is explained in the notes or fixed |
-| `biases` | the bias checklist (Q-8) with a status per row: lookahead, survivorship, selection of the universe, the hold-out used once, parameters chosen in-sample, costs switched on, multiplicity (trials counted); `flagged` rows go into the rationale |
-| `surface` | the grid: one row per cell with the parameters, `sharpe`, `return`, `max_drawdown`, `trades`, and the summary `smoothness` and `neighbours_within_10pct` of the best cell. A **plateau** is a region of good cells with a smooth surface; a **cliff** is one good cell with poor neighbours. `pbo` is in `claims` |
-| `subperiods` | by calendar year (and by decade): `return`, `sharpe`, `trades`, `share_of_profit`. "Most of the net profit before 1990" is a red flag |
-| `contribution` | by market and by group: `net_profit`, `share`, `trades`, `profitable` (bool). One market above 40 % of the net profit, or fewer than half the markets profitable, is a red flag |
-| `trades` | the trade list (entity, entry bar, exit bar, side, quantity, entry, exit, P&L, costs, bars held, largest adverse excursion); the input of the translation check and of the fat-tail row (largest loss against risk per trade, skew) |
-| `text` | the report's prose; read it last, after the tables |
+The same outcomes as `summary`, plus `grids` (the surface: each cell's point and objective), `dsr`, `trials` (`count`, `kinds`: quote both in the rationale), `claims` (each with its in-sample verdict, and the out-of-sample one after the reveal; `undecidable` is not a pass: read its reason), `reveal`, `contribution` (by market: net profit and share), `warnings`. A plateau is a region of good cells; a cliff is one good cell with poor neighbours.
 
 ## 3. The red-flag rows (house rules §12)
 

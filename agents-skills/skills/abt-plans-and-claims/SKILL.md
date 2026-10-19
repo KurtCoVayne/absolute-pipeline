@@ -1,6 +1,6 @@
 ---
 name: abt-plans-and-claims
-version: 1
+version: 2
 ---
 # Plans and claims
 
@@ -80,55 +80,25 @@ Your job admits `plan_runs` plan executions (4) and a grid of at most `grid_poin
 
 ## 6. The templates (house rules §15)
 
-The translation check (one liquid market, a short window, every relation you must recompute observed):
+Every plan's `window` ends at `H` verbatim and starts no earlier than three years before it; `holdout trailing:20%`; `budget { money 0 … }`. The development plan is `write-strategy` step 4. The translation check is the same program over the last months before `H`:
 
 ```
 study check_<slug> {
   program    <slug>.dsl
-  params     { only = "ES" }
+  params     { <the author's point> }
   holdout    trailing:20%
-  window     <first bar> .. <H>
+  window     <H − 4 months> .. <H>
   budget     { money 0; bytes 2G; requests 0 }
   objective  sharpe
   claims     { trades : nw_mean on returns of check expect statistic > -100 after }
-  steps      { run check at { only = "ES" } over 2019-01-02 .. 2019-06-28 observe atr, n_full, signal   report main }
+  steps      { run check observe atr, size   report main }
   report     { metrics [return, trades]; tables [trades]; text }
 }
 ```
 
-The development plan:
+Variants a parameter expresses (`side`, a stop) are `run … at { side = 1 }` steps inside the development plan; a variant of the `execution` block is a second program `# revises:` the first.
 
-```
-study idea_<slug> {
-  program    <slug>.dsl
-  params     { <the author's point>; only = "all" }
-  grid       { <p1> = v1, v2, v3, v4, v5; <p2> = w1, w2, w3, w4, w5 }      # ≤ 25 cells
-  holdout    trailing:20%
-  window     <first bar> .. <H>
-  budget     { money 0; bytes 2G; requests 0 }
-  objective  sharpe
-  claims {
-    survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after
-    not_overfit    : pbo on grid sens expect statistic < 0.5 after
-  }
-  steps {
-    run     sanity     at { only = "<the author's instrument>" } over <the author's dates>
-    run     base
-    grid    sens
-    run     long_only  at { side = 1 }
-    run     short_only at { side = -1 }
-    run     no_stop    at { stop_atr = 0 }
-    compare variants: base, long_only, short_only, no_stop by [return, max_drawdown, mar, sharpe, trades, profit_factor]
-    reveal  oos of base
-    report  main
-  }
-  report { metrics [return, volatility, sharpe, mar, max_drawdown, drawdown_duration, trades, profit_factor, hit_rate, avg_win_loss]; tables [surface, subperiods, contribution, trades]; text }
-}
-```
-
-Only the variants the program's parameters express belong here (`side`, `stop_atr`); a variant that changes the `execution` block (`moc` instead of `moo`, `no_costs`) is a second program `# revises:` the first, with a plan of its own.
-
-The forward plan (pre-registered at `submit`; the same program hash, the submitted point):
+The forward plan (checked at `submit`; the same program hash, the submitted point):
 
 ```
 study forward_<slug> {
