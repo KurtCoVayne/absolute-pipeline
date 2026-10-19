@@ -1,5 +1,6 @@
 [package]
 name = "abt-report"
+description = "The static report site (PL-7.4): the log's records and the data layer's report tables rendered as pages a person reads without a server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -7,3 +8,17 @@ publish = false
 
 [dependencies]
 pipeline-wire.workspace = true
+abt-wire.workspace = true
+arrow.workspace = true
+rdkafka.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+chrono.workspace = true
+blake3.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -1,0 +1,18 @@
+{
+  "columns": [
+    "code",
+    "layer",
+    "bias",
+    "count",
+    "message"
+  ],
+  "rows": [
+    [
+      "W3",
+      "kernel",
+      "partial fill",
+      2,
+      "two orders larger than the bar's participation cap were filled over two bars"
+    ]
+  ]
+}

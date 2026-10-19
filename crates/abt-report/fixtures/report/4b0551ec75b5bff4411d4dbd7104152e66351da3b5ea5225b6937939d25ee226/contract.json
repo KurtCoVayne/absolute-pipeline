@@ -1,0 +1,85 @@
+{
+  "columns": [
+    "clause",
+    "kind",
+    "source",
+    "discharge",
+    "policy",
+    "status",
+    "count"
+  ],
+  "rows": [
+    [
+      "capital fixed: no decision reads nav",
+      "inv",
+      "execution.capital",
+      "static",
+      "halt",
+      "proven(1)",
+      0
+    ],
+    [
+      "every decide reads bars at or before T",
+      "pre",
+      "clock",
+      "static",
+      "halt",
+      "proven(1)",
+      0
+    ],
+    [
+      "position * mark <= leverage * capital",
+      "limit",
+      "execution.leverage",
+      "runtime",
+      "halt",
+      "checked",
+      0
+    ],
+    [
+      "oversize: order <= participation cap",
+      "limit",
+      "execution.oversize",
+      "runtime",
+      "halt",
+      "checked",
+      0
+    ],
+    [
+      "ruin: nav > 0",
+      "inv",
+      "execution.ruin",
+      "runtime",
+      "halt",
+      "checked",
+      0
+    ],
+    [
+      "every relation on a path to decide derives a tuple",
+      "post",
+      "rules",
+      "observe",
+      "warn",
+      "warned(3)",
+      3
+    ],
+    [
+      "decisions > 0",
+      "post",
+      "decisions",
+      "runtime",
+      "halt",
+      "checked",
+      0
+    ],
+    [
+      "final cash = initial + fills - costs + settlements",
+      "post",
+      "book",
+      "runtime",
+      "checked",
+      "checked",
+      0
+    ]
+  ]
+}

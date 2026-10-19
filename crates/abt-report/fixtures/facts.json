@@ -1,0 +1,11 @@
+{
+  "instance": "m7i.2xlarge",
+  "region": "us-east-1",
+  "cpus": 8,
+  "memory_gb": 32,
+  "disk": "500 GB gp3",
+  "sandbox_pool": 20,
+  "kernel_pool": 4,
+  "redpanda": "v25.2.1",
+  "note": "the sample's facts; `--facts FILE` carries the machine's own"
+}
