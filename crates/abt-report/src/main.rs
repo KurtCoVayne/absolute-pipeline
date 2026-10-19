@@ -1,5 +1,5 @@
-//! `abt-report build` gathers the site's inputs (the pages follow);
-//! `abt-report fixtures` writes the sample set the tests build from.
+//! `abt-report build` renders the site; `abt-report fixtures` writes the
+//! sample set the tests build from.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -86,15 +86,13 @@ fn main() -> Result<()> {
                 let text = std::fs::read_to_string(&f).with_context(|| f.display().to_string())?;
                 inputs.facts = Some(serde_json::from_str(&text).with_context(|| f.display().to_string())?);
             }
-            std::fs::create_dir_all(&out)?;
+            let built = abt_report::build(&inputs, &out)?;
             println!(
-                "{} documents, {} hypotheses, {} submissions, {} outcomes, {} report tables for {}",
-                inputs.documents.len(),
-                inputs.hypotheses.len(),
-                inputs.submissions.len(),
-                inputs.outcomes.len(),
-                inputs.reports.values().map(|t| t.len()).sum::<usize>(),
-                out.display()
+                "{} pages for {} strategies into {} in {:.3} s",
+                built.pages.len(),
+                built.strategies,
+                built.out.display(),
+                built.elapsed.as_secs_f64()
             );
         }
         Command::Fixtures { out } => {
