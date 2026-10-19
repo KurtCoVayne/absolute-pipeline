@@ -1,0 +1,105 @@
+# One machine, one Compose file (PL-8.4): the three backtester programs in
+# the dedicated profile over Unix sockets under /srv/absolute/run, Redpanda,
+# ingest, ingest-fetch, the orchestrator, the egress proxy, the gateway and
+# the site. Every pipeline service is on the host's network: the gateway on
+# 127.0.0.1:7777 is reachable by the proxy alone, the proxy on 10.200.0.1:8080
+# by the sandboxes alone (deploy/sandbox-network.sh), the site on
+# 127.0.0.1:8080 through an SSH tunnel (PL-D6). Secrets are files under
+# /etc/absolute-pipeline mounted read-only; none is in this file.
+x-abt: &abt
+  image: absolute/abt:latest
+  build: { context: /srv/absolute, dockerfile: absolute-pipeline/deploy/Dockerfile.abt }
+  restart: unless-stopped
+  user: "1500:1500"
+  volumes:
+    - /srv/absolute/store:/store
+    - /srv/absolute/run:/run/abt
+    - /srv/absolute/corpus:/corpus:ro
+  ulimits: { memlock: -1, nofile: 1048576 }
+  logging: { driver: json-file, options: { max-size: 50m, max-file: "5" } }
+
+x-pipeline: &pipeline
+  image: absolute/pipeline:latest
+  build: { context: /srv/absolute, dockerfile: absolute-pipeline/deploy/Dockerfile.pipeline }
+  restart: unless-stopped
+  network_mode: host
+  volumes:
+    - /etc/absolute-pipeline:/etc/absolute-pipeline:ro
+    - /srv/absolute/run:/run/abt
+    - /srv/absolute/data:/data
+  logging: { driver: json-file, options: { max-size: 50m, max-file: "5" } }
+  environment:
+    - PIPELINE_BROKERS=127.0.0.1:9092
+    - RUST_LOG=info
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.2.1
+    restart: unless-stopped
+    network_mode: host
+    command: >
+      redpanda start --mode dev-container --smp 2 --memory 2G --reserve-memory 0M --overprovisioned
+      --kafka-addr 127.0.0.1:9092 --advertise-kafka-addr 127.0.0.1:9092 --rpc-addr 127.0.0.1:33145 --advertise-rpc-addr 127.0.0.1:33145
+      --set redpanda.enable_idempotence=true
+    volumes: [ "/srv/absolute/redpanda:/var/lib/redpanda/data" ]
+    healthcheck: { test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"], interval: 10s, timeout: 5s, retries: 12 }
+
+  abt-data:
+    <<: *abt
+    command: ["abt-data", "serve", "--store", "/store", "--socket", "/run/abt/data.sock", "--profile", "dedicated"]
+    mem_limit: 14g
+  abt-kernel-1: { <<: *abt, command: ["abt-kernel", "serve", "--socket", "/run/abt/kernel-1.sock", "--data", "/run/abt/data.sock"], depends_on: [abt-data], mem_limit: 1536m }
+  abt-kernel-2: { <<: *abt, command: ["abt-kernel", "serve", "--socket", "/run/abt/kernel-2.sock", "--data", "/run/abt/data.sock"], depends_on: [abt-data], mem_limit: 1536m }
+  abt-kernel-3: { <<: *abt, command: ["abt-kernel", "serve", "--socket", "/run/abt/kernel-3.sock", "--data", "/run/abt/data.sock"], depends_on: [abt-data], mem_limit: 1536m }
+  abt-kernel-4: { <<: *abt, command: ["abt-kernel", "serve", "--socket", "/run/abt/kernel-4.sock", "--data", "/run/abt/data.sock"], depends_on: [abt-data], mem_limit: 1536m }
+  abt-query:
+    <<: *abt
+    command: ["abt-query", "serve", "--socket", "/run/abt/query.sock", "--data", "/run/abt/data.sock", "--kernel", "/run/abt/kernel-1.sock"]
+    depends_on: [abt-data, abt-kernel-1]
+    mem_limit: 2g
+
+  ingest:
+    <<: *pipeline
+    command: ["ingest", "serve", "--config", "/etc/absolute-pipeline/ingest.toml"]
+    depends_on: { redpanda: { condition: service_healthy } }
+  ingest-fetch:
+    <<: *pipeline
+    command: ["ingest-fetch", "serve", "--config", "/etc/absolute-pipeline/fetch.toml"]
+    depends_on: { redpanda: { condition: service_healthy } }
+    cap_add: [SYS_RESOURCE]
+  egress-proxy:
+    <<: *pipeline
+    command: ["egress-proxy", "--config", "/etc/absolute-pipeline/proxy.toml"]
+  abt-gateway:
+    <<: *pipeline
+    command: ["abt-gateway", "serve", "--config", "/etc/absolute-pipeline/gateway.toml"]
+    depends_on: [abt-data, abt-query, abt-kernel-1, abt-kernel-2, abt-kernel-3, abt-kernel-4]
+  orchestrator:
+    <<: *pipeline
+    command: ["orchestrator", "serve", "--config", "/etc/absolute-pipeline/orchestrator.toml"]
+    volumes:
+      - /etc/absolute-pipeline:/etc/absolute-pipeline
+      - /srv/absolute/run:/run/abt
+      - /srv/absolute/data:/data
+      - /srv/absolute/jobs:/srv/absolute/jobs
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on: { redpanda: { condition: service_healthy }, abt-gateway: { condition: service_started }, egress-proxy: { condition: service_started } }
+  forward:
+    <<: *pipeline
+    command: ["abt-gateway", "forward", "--config", "/etc/absolute-pipeline/gateway.toml", "--every", "1d"]
+    depends_on: [abt-gateway]
+  report:
+    <<: *pipeline
+    command: ["sh", "-c", "while true; do abt-report build --config /etc/absolute-pipeline/report.toml --out /site || true; sleep 600; done"]
+    volumes:
+      - /etc/absolute-pipeline:/etc/absolute-pipeline:ro
+      - /srv/absolute/run:/run/abt
+      - /srv/absolute/data:/data
+      - /srv/absolute/site:/site
+  site:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /srv/absolute/site:/usr/share/nginx/html:ro
+      - /srv/absolute/absolute-pipeline/deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro

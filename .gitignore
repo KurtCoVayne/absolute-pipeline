@@ -11,3 +11,4 @@ SECRETS.received
 scripts/aws/machine.env
 # generated on the machine by deploy/up.sh
 .cargo/config.local.toml
+data/
