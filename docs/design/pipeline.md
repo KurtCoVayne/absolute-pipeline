@@ -168,6 +168,15 @@ Three intake paths, one interface:
 | P2 push | Activity API subscription per `user_id`, `/2/activity/stream` or webhook | seconds | per event | MVP-2, if the console confirms public `post.create` |
 | P3 stream | filtered stream `from:` rules | seconds | Pro/Enterprise subscription | not planned |
 
+**Amendment of Oct 19, 2026 (the owner, PL-D9): the X source is read through xAI's API, not the X API.** The owner holds an xAI API key and no X API bearer token, and decided to go around the X API. xAI's Agent Tools (`POST https://api.x.ai/v1/responses` with a tool of type `x_search`, `allowed_x_handles`, `from_date`, `to_date`) let a model search and fetch X posts server-side (`x_keyword_search` with `from:handle since: until:` queries, `x_thread_fetch` per post) and return them with `url_citation` annotations; a probe on Oct 19 (one handle, two days, `grok-4.20-non-reasoning`) made 14 tool calls, fetched 73 posts and listed every post of the span as JSON lines with id, `created_at`, the text verbatim, links, the quoted and replied-to ids, at a reported cost of $0.40 (`usage.cost_in_usd_ticks`, 1e-10 USD a tick; `x_posts_fetched = 73`). So:
+
+| Path | Mechanism | Latency | Cost model | Status |
+| --- | --- | --- | --- | --- |
+| P5 xAI poll | one `responses` request per cadence and group of handles, asking for every post since the group's watermark as JSON lines (`id`, `url`, `created_at`, `text` verbatim, `urls`, `quoted_id`, `reply_to_id`); the response's bytes are the `RawItem`; the post's id is the fixity time (the snowflake, verified against `created_at`); `since_id` per account is kept from the ids returned | the cadence/2 plus 10 to 60 s of model time | `cost_in_usd_ticks` of every response, summed into the spending guard (a hard cap, $25 today); about $0.10 to $0.40 a request | **MVP default** |
+| P1 poll | the X API v2 user timeline with `since_id` | ≈ 6 s | $0.005 a post | kept in the code; used the day a bearer token exists |
+
+The text a model transcribes is data of a lower grade than the API's bytes: the adapter **verifies** every new post through the public mirror `api.fxtwitter.com/<handle>/status/<id>` (read-only, SSRF-safe, the same path that fetched the seed posts, PL-D7), replaces the text by the mirror's exact text when it answers and marks the document `verified`, and flags `flags.transcription` when the two differ beyond whitespace; a post the mirror cannot serve keeps the transcription, marked. Tiers become groups and cadences of requests: tier 1 (12 handles, one request) every 15 min, tier 2 (25 handles, two requests) every 60 min, tier 3 every 6 h, with the model's tool calls capped per request (`max_tool_calls`) and the guard halting polling at the cap. Rejected: waiting for a bearer token (the owner's call); scraping x.com (against its terms); the mirror alone (it serves one post by id and cannot list an account).
+
 **Budget.** With `N` accounts at `m` posts a day, the month costs about `30·N·m·$0.005`, plus about 30 % for the originals of quotes and reposts; 50 accounts at 15 posts a day is ≈ $110 + $35 a month. The rate limit allows 11 requests a second per app, so 50 accounts at a 10 s cadence (5 requests a second) is inside it; the follower never requests `expansions=author_id` (the author is known; a user object is twice the price of a post).
 
 **Tiers and cadence.** `tier 1` 10 s, `tier 2` 60 s, `tier 3` 5 min, with jitter, exponential backoff on 429 and a per-cycle spending guard that halts polling at the budget and raises an alert; the guard is a hard cap, not a warning.
@@ -531,7 +540,7 @@ Decided by the owner on Oct 19, 2026:
 
 | Item | Decision | Where |
 | --- | --- | --- |
-| The X keys | pay-per-use credits: P1 poll at tiers (10 s, 60 s, 5 min) under a $300 a month spending guard; P1′ and P2 adopted when the console confirms `since_id` on list timelines and public `post.create` subscriptions | 5.2 |
+| The X keys | **Oct 19, 17:40 UTC: the xAI key instead of an X API bearer token (PL-D9)**: P5 polls through xAI's `x_search` under the spending guard ($25 today, a hard cap); P1 stays in the code for the day a bearer token exists; P1′ and P2 need the X console and are not pursued | 5.2 |
 | Models | no expensive models: `gpt-6-luna` everywhere; the quant alone may move to `gpt-6.1-sol` if GP-5's task fails on the small model; `gpt-6-astra` nowhere | 6.2 |
 | The machine | one 32 GB instance in the owner's AWS account (`m7i.2xlarge`), gVisor as the sandbox runtime, `memlock` raised | 3, 6.7, 8.4 |
 | The data | the owner's Databento store (and Norgate for equities) is the only data; the house universe is every futures root the store holds; the colleague's CSI files are not loaded and there is no parity gate against his engine | guideline §2 |

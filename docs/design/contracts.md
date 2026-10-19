@@ -102,3 +102,6 @@ Written by the gateway only, through `put` under class `pipeline` (the amendment
 | PL-D4 | the sandbox network is an internal Docker bridge whose only reachable host is the proxy | per-sandbox iptables rules (fragile under a pool of twenty) |
 | PL-D5 | tables to the model are capped at 500 rows | streaming tables into a model context (the budget and the context both forbid it) |
 | PL-D6 | the site is reached through an SSH tunnel today | opening 8080 to the owner's IP (the instructions admit SSH only) |
+| PL-D7 | the 50 seed posts fetched through the public mirror `api.fxtwitter.com` (read-only) and written in the X API v2 shape for the `file` adapter | waiting for a bearer token (the day's gates need the campaign) |
+| PL-D8 | the Databento lake staged one root at a time (the adapter holds a `--from` tree in memory; the whole lake took 31.6 GB and was killed) | a bigger machine, or an adapter change in the backtester (outside the amendments) |
+| PL-D9 | **the owner's decision**: the X source through xAI's `x_search` (path P5 of PL-5.2's amendment), every response's `cost_in_usd_ticks` into the $25 guard, texts verified through the mirror | the X API bearer token (none exists), scraping x.com (its terms) |

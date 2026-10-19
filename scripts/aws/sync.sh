@@ -12,7 +12,7 @@ RS=(rsync -az --delete -e "ssh -i $KEY_FILE -o StrictHostKeyChecking=accept-new"
 "${RS[@]}" "$ROOT/" "ubuntu@$ADDRESS:/srv/absolute/absolute-pipeline/"
 BACKTEST="${BACKTEST:-$ROOT/../absolute-backtest-amend}"
 "${RS[@]}" --exclude 'experiments/' --exclude 'reference/' "$BACKTEST/" "ubuntu@$ADDRESS:/srv/absolute/absolute-backtest/"
-for f in openai_api_key x_bearer_token token_signing_key; do
+for f in openai_api_key xai_api_key x_bearer_token token_signing_key; do
   if [ -f "$SECRETS/$f" ]; then
     scp -q -i "$KEY_FILE" "$SECRETS/$f" "ubuntu@$ADDRESS:/etc/absolute-pipeline/$f"
     ssh_machine "chmod 0600 /etc/absolute-pipeline/$f"
