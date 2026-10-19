@@ -1,0 +1,6 @@
+# The backtester's crates are git dependencies of a private repository:
+# cargo fetches them with the git command line, which carries the owner's
+# credentials. On the machine, deploy/up.sh adds a [patch] section pointing
+# at the synced tree under /srv/absolute/absolute-backtest.
+[net]
+git-fetch-with-cli = true

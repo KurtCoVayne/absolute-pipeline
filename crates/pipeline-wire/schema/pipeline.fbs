@@ -1,0 +1,269 @@
+// The pipeline's records (docs/design/pipeline.md, PL-4.1, PL-4.4). Every
+// message on the log is one size-prefixed `Envelope` holding one record;
+// `build.rs` compiles this file with planus into zero-copy readers and owned
+// types, as abt-wire does for its schema (P-1.1). The record's id is never
+// over these bytes: it is BLAKE3 over the RFC 8785 canonical JSON of the
+// record's logical fields (`ids.rs`), because a FlatBuffer's bytes depend on
+// the builder's layout. Times are nanoseconds since the Unix epoch, UTC,
+// i64 (A-D7): `p` published (from the source, untrusted), `r` received,
+// `fixed_at` the fixity time of Definition PL-4.1, `h` the horizon.
+
+namespace pipeline.wire;
+
+// An id is a 32-byte BLAKE3 hash (A-6) and travels as its 64 lowercase hex
+// digits, the form every log, page and JSON rendering shows (PL-D1).
+
+enum Source : ubyte { X = 0, File = 1, Arxiv = 2, Rss = 3, Web = 4 }
+
+// What a raw item holds: a post, a page, a paper, a file.
+enum RawKind : ubyte { Post = 0, Page = 1, Pdf = 2, FileDrop = 3, UserObject = 4 }
+
+// ---------------------------------------------------------------- L1 records
+
+// The bytes an adapter received (PL-4.1). `bytes` inline up to 256 KiB, else
+// `object` names the object store's key (content-addressed, PL-5.7) and
+// `bytes` is empty. `id = BLAKE3(bytes)` whether inline or not.
+table RawItem {
+  id: string (required);
+  source: Source;
+  kind: RawKind;
+  source_id: string (required);      // the post id, the URL, the file's path
+  account_id: string;                // the X user id for a post; empty otherwise
+  r: long;
+  bytes: [ubyte];
+  object: string;
+  size: ulong;
+}
+
+table Author { id: string (required); handle: string (required); }
+
+enum ParentKind : ubyte { Thread = 0, Reply = 1, Quote = 2, Repost = 3, Link = 4 }
+table Parent { kind: ParentKind; doc_id: string; source_id: string (required); }
+
+enum SegmentKind : ubyte { Text = 0, Quoted = 1, LinkTitle = 2, Fetched = 3 }
+table Segment { kind: SegmentKind; text: string (required); span_from: uint; span_to: uint; }
+
+// A cashtag or symbol resolved through the local symbol table (PL-5.3);
+// ambiguous symbols carry every candidate with a confidence.
+table Instrument { symbol: string (required); abt_id: ulong; confidence: double; class: string; }
+
+table Entities {
+  instruments: [Instrument];
+  cashtags: [string];
+  hashtags: [string];
+  mentions: [string];
+  urls: [string];
+}
+
+enum LinkState : ubyte { Pending = 0, Done = 1, Failed = 2, Skipped = 3 }
+table Link { url: string (required); state: LinkState; doc_id: string; reason: string; }
+
+table Attachment { kind: string (required); url: string (required); alt: string; }
+
+// PL-5.3's flags and PL-5.5's injection score in [0, 1].
+table Flags { injection: double; spam: double; dup_of: string; near_dup_of: string; }
+
+table Enrichment { pending: uint; done: uint; failed: uint; }
+
+// An agent-ready document (PL-4.1): version 1 from the adapter's `extract`,
+// later versions from `ingest-fetch`. A version is a new message with the
+// same `id` and a greater `version`; `r` is version 1's receipt and `r_n`
+// this version's.
+table Document {
+  id: string (required);
+  version: uint;
+  raw_ids: [string];
+  source: Source;
+  author: Author (required);
+  p: long;
+  fixed_at: long;
+  r: long;
+  r_n: long;
+  parents: [Parent];
+  text: string (required);
+  segments: [Segment];
+  entities: Entities;
+  links: [Link];
+  attachments: [Attachment];
+  lang: string;
+  flags: Flags;
+  enrichment: Enrichment;
+  source_deleted: bool;              // set by a tombstone (PL-5.5); the text is then empty
+}
+
+// ---------------------------------------------------------------- L2 records
+
+enum Verdict : ubyte { None = 0, Commentary = 1, Claim = 2, Candidate = 3 }
+
+table Triage {
+  id: string (required);
+  doc_id: string (required);
+  doc_version: uint;
+  verdict: Verdict;
+  instruments: [string];
+  topics: [string];
+  score: double;
+  model: string (required);
+  prompt_hash: string (required);
+  cost_usd: double;
+  r: long;
+  job_id: string;
+}
+
+table Evidence { doc_id: string (required); span_from: uint; span_to: uint; quote: string; }
+
+enum Direction : ubyte { Long = 0, Short = 1, Both = 2, Unknown = 3 }
+
+// One falsifiable statement (PL-4.1, the analyst). `claims` are in Q-5.1's
+// syntax; `data_needs` name relations by class ("future.close").
+table Hypothesis {
+  id: string (required);
+  doc_ids: [string];
+  h: long;                           // the information horizon H (Definition PL-4.1)
+  statement: string (required);
+  universe: string (required);
+  signal: string (required);
+  horizon: string;                   // the holding horizon in the author's words
+  direction: Direction;
+  data_needs: [string];
+  claims: [string];
+  evidence: [Evidence];
+  author_reported: string;           // the author's numbers as JSON text (capital, net, drawdown, Sharpe, trades, dates, instrument)
+  confidence: double;
+  agent: string (required);
+  model: string (required);
+  prompt_hash: string (required);
+  skills: [string];
+  cost_usd: double;
+  r: long;
+  job_id: string;
+}
+
+// The pre-registered record (PL-P2): immutable once written by the
+// gateway's `submit`. `insample` is the (verdicts, metrics, decisions) JSON
+// the gateway rendered from the plan's report.
+table Submission {
+  id: string (required);
+  hypothesis_id: string (required);
+  program_hash: string (required);
+  plan_hash: string (required);
+  lineage: string (required);
+  h: long;
+  claims: [string];
+  insample: string (required);
+  trials_used: ulong;
+  rationale: string (required);
+  program_text: string (required);
+  plan_text: string (required);
+  forward_plan_text: string;
+  forward_plan_hash: string;
+  agent: string (required);
+  model: string (required);
+  cost_usd: double;
+  r: long;
+  job_id: string;
+  campaign: string;
+  skills_hash: string;
+}
+
+enum OutcomeStatus : ubyte { InsampleOnly = 0, Forward = 1, Retired = 2 }
+
+table Outcome {
+  id: string (required);
+  submission_id: string (required);
+  reveal: uint;
+  r: long;
+  forward_from: long;
+  forward_to: long;
+  verdicts: [string];                // "name: holds|fails|undecidable(reason)" per claim, (in-sample, forward) pairs as JSON in `metrics`
+  metrics: string (required);        // JSON: the forward metrics, the lineage's trial count, the forward DSR, the minimum track-record length
+  status: OutcomeStatus;
+  retired_reason: string;
+}
+
+// ---------------------------------------------------------------- the orchestrator
+
+enum Stage : ubyte { Triage = 0, Analyze = 1, Strategize = 2, Forward = 3, Review = 4 }
+enum JobState : ubyte { Queued = 0, Running = 1, Done = 2, Failed = 3, Poisoned = 4 }
+
+table Budget {
+  tokens_in: ulong;
+  tokens_out: ulong;
+  tool_calls: uint;
+  wall_s: uint;
+  money_usd: double;
+  plan_runs: uint;
+  grid_points: uint;
+  checks: uint;
+}
+
+table Cost { tokens_in: ulong; tokens_out: ulong; tokens_cached: ulong; tool_calls: uint; wall_s: double; money_usd: double; }
+
+table Failure { reason: string (required); retryable: bool; detail: string; }
+
+// `id = BLAKE3(stage, inputs, definition_hash, skills_hash, model)`, so a
+// redelivered message is the same job (PL-4.1).
+table Job {
+  id: string (required);
+  stage: Stage;
+  inputs: [string];
+  agent: string (required);
+  definition_hash: string (required);
+  skills_hash: string (required);
+  model: string (required);
+  caps: [string];
+  budget: Budget;
+  attempt: uint;
+  state: JobState;
+  sandbox: string;
+  started: long;
+  finished: long;
+  cost: Cost;
+  outputs: [string];
+  failure: Failure;
+  h: long;
+  lineage: string;
+  campaign: string;
+}
+
+// ---------------------------------------------------------------- control
+
+enum TombstoneSubject : ubyte { Document = 0, Account = 1 }
+table Tombstone { id: string (required); subject: TombstoneSubject; subject_id: string (required); doc_id: string; reason: string (required); r: long; }
+
+enum AccountState : ubyte { Active = 0, Muted = 1, Suspended = 2, Removed = 3 }
+
+// A row of the follow list in the compacted `control` topic (PL-5.2).
+table Follow {
+  account_id: string (required);     // the X user id when resolved; empty until then
+  handle: string (required);
+  tier: ubyte;
+  added_by: string (required);
+  r: long;
+  state: AccountState;
+  shared: uint;
+  posts_shared: uint;
+}
+
+// A budget row of the `control` topic (PL-6.8): per stage, per campaign, global.
+table BudgetRow { scope: string (required); cap_usd: double; period: string (required); set_by: string (required); r: long; }
+
+// The campaign record (PL-6.5): a replay under a named skills version.
+table Campaign {
+  id: string (required);
+  name: string (required);
+  skills_version: string (required);
+  budget_usd: double;
+  posts: [string];                   // post URLs or document ids
+  started: long;
+  finished: long;
+  r: long;
+}
+
+union Record {
+  RawItem, Document, Triage, Hypothesis, Submission, Outcome, Job, Tombstone, Follow, BudgetRow, Campaign
+}
+
+table Envelope { record: Record (required); }
+
+root_type Envelope;
