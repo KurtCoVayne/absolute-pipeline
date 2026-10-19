@@ -1,6 +1,6 @@
 ---
 name: abt-language
-version: 1
+version: 2
 ---
 # The abt language, condensed for writing a program
 
@@ -30,8 +30,8 @@ A library is `library NAME { data { class any [need bars] }  uses …  rules { �
 ```
 data {
   class    future                        # equity | future | series | option
-  need     bars @1d from 1990-01-01      # open, high, low, close, volume at @1d or finer, from the date on
-  need     sessions, point_value, commission     # futures: the session relation, the multiplier, the per-side commission
+  need     bars @1m from 2024-01-01 complete   # futures: the minute bars from the date on (equities: bars @1d)
+  need     sessions, point_value         # futures: the session relation and the multiplier (costs come from the preset)
   need     actions, listing              # equities: split, dividend, delisted; listed, ticker
   need     lists "SPX"                   # member(A, T, "SPX"); the label must be in the catalog (schema)
   need     series "VIX" @1w              # value("VIX", T, V)
@@ -44,7 +44,7 @@ data {
 
 ### `clock` and `calendars`
 
-- Daily: `clock { decide on base }` (the base calendar of the class: `@1d` for equities; the store derives daily bars for futures from the minute base through the bar views).
+- Daily equities: `clock { decide on base }` (`@1d`). Daily futures: `calendars { session = sessions }`, `clock { decide on session }`, the bars read as `close@session` (`abt-idioms` §1).
 - Intraday futures: `calendars { session = sessions   es_days = sessions of "ES" }` and `clock { decide on base at session + 30min }`: the bar labelled open + 30 minutes, or the first traded bar after it.
 - Weekly or monthly: `calendars { weekly = weeks(1) }`, `clock { decide on weekly }`; `prev`, `rows` and windows then step a week.
 
@@ -53,14 +53,13 @@ data {
 ```
 universe { universe(A, T) :- listed(A, T), traded@base(A, T). }                       # every listed equity with a bar
 universe { universe(A, T) :- listed(A, T), member(A, T, "SPX"), traded@base(A, T). }   # index members as of the bar
-universe { universe(A, T) :- member(A, T, "HOME-26"), session_of(A, T, _). }           # a futures list the store holds
 universe {
-  instruments { ES from 2000-01-01;  NQ from 2000-01-01;  CL from 2007-01-01;  GC }   # an explicit table: counted as degrees of freedom and warned (W9)
-  universe(A, T) :- instruments(A, From), traded@base(A, T), T >= From.
+  instruments { ES from 2024-01-01;  NQ from 2024-01-01 }       # futures: name the roots (W9 warns; that is fine)
+  universe(A, T) :- instruments(A, From), session(A, T, _), T >= From.
 }
 ```
 
-`universe(A, @T)` is complete by definition, so `prev_row`, `first_row`, `bar` and `flat` may be negated. The house futures universe is every root the store holds (house rules §2): `catalog("future")` lists them; `schema("future")` lists the `member` lists.
+`universe(A, @T)` is complete by definition, so `prev_row`, `first_row`, `bar` and `flat` may be negated. `catalog("future")` lists the staged roots; a futures program names the roots it trades in an `instruments` table: the author's instruments, or every staged root when the idea is about the house universe (`write-strategy`, fixed limits).
 
 ### `params`
 
@@ -146,66 +145,17 @@ A relation parameter is written by name: `mean_rows[20, close](A, T, M)`, `latch
 
 ## 3. The catalogs (what `schema(class)` prints)
 
-**`future`** (base `@1m`, unit `contracts`): `open, high, low, close, volume` per root as **back-adjusted continuous** series whose prices may cross zero; `session(A, @S, Open)` complete, one per root and session labelled at the session's close; `point_value(A, @T, V: Scalar)` complete (currency per point per contract); `commission(A, @T, C: Notional<USD>)` complete (per contract per side); `member(A, @T, List: Label)` complete; `usable(A, @T)` complete; `settlement(A, @T, P)`; `open_interest(A, @T, N)`; `margin(A, @T, Initial, Maintenance)` complete. Lists: as the store declares them (`schema("future")` prints them; the corpus's example declares `"HOME-26"`, `"HOLD-6"`).
+**`future`** (base `@1m`, unit `contracts`): `open, high, low, close, volume` per root as **back-adjusted continuous** series whose prices may cross zero; `session(A, @S, Open)` complete, one per root and session labelled at the session's close; `point_value(A, @T, V: Scalar)` complete (currency per point per contract); the store holds no `commission`, `member`, `usable`, `settlement`, `open_interest` or `margin` rows for futures: costs come from the preset, and the universe names its roots.
 
-**`equity`** (base `@1d`, unit `shares`): `open, high, low, close, volume` as traded; `listed(A, @T)` complete; `ticker(A, @T, S: Label)`; `split(A, @T, Factor)`; `dividend(A, @T, Ex, Pay, Amount)`; `special_dividend`; `delisted(A, @T, Reason: Label)`; `member(A, @T, List: Label)`; `classification(A, @T, Scheme, Code)`; `margin`. Lists `"SPX", "SP500", "SP400", "SP600", "ETF"`; reasons `"bankruptcy", "acquisition", "voluntary", "regulatory"`.
+**`equity`** (base `@1d`, unit `shares`): `open, high, low, close, volume` as traded; `listed(A, @T)` complete; `ticker(A, @T, S: Label)`; `split(A, @T, Factor)`; `dividend(A, @T, Ex, Pay, Amount)`; `special_dividend`; `delisted(A, @T, Reason: Label)`; `member(A, @T, List: Label)`; `classification(A, @T, Scheme, Code)` (the GICS sector) and `industry(A, @T, Group, Industry, SubIndustry)`, both one snapshot from 2026-09-21 on; `margin`. Lists `"SPX", "SP500", "SP400", "SP600", "ETF"`; reasons `"bankruptcy", "acquisition", "voluntary", "regulatory"`.
 
 **`series`**: `value(Name: Label, @T, V: Scalar)` with names such as `"SPXTR" @1d`, `"VIX" @1w`.
 
 Read the real catalog of the store before writing (`schema`, `catalog`): lists, roots and spans differ from the corpus's example.
 
-## 4. A complete daily futures program on the house preset
+## 4. Complete programs
 
-```
-# Buy a 50-day Donchian breakout at the next open, exit on a 3-ATR trailing stop; house sizing.
-strategy donchian_50 {
-  data {
-    class    future
-    need     bars @1d from 2000-01-01
-    need     sessions, point_value, commission
-    require  reviewed
-    prefer   latest
-  }
-  uses  calendar, stat, bars, state, book
-  clock { decide on base }
-  universe {
-    universe(A, T) :- member(A, T, "HOUSE"), traded@base(A, T).
-  }
-  params {
-    entry_rows : Count = 50 in 20..100
-    trail_atr  : Scalar = 3 in 1..5
-    atr_rows   : Count = 20
-    risk_pct   : Scalar = 0.0075
-    stop_ix    : Scalar = 2
-  }
-  rules {
-    rel atr(A: Future, @T, V: Price<USD>)
-    atr(A, T, V) :- universe(A, T), V = mean(R) over (T1 in rows[atr_rows], true_range(A, T1, R)).
-
-    rel n_full(A: Future, @T, N: Quantity<Contracts>)
-    n_full(A, T, N) :- atr(A, T, V), V > 0 USD/contract, point_value(A, T, PV), capital(T, C),
-        N = risk_pct * C / (stop_ix * V * PV).
-
-    rel breakout(A: Future, @T)
-    breakout(A, T) :- close(A, T, P), max_prior_window[entry_rows, entry_rows, close](A, T, H), P > H.
-
-    rel trail(A: Future, @T, S: Price<USD>)
-    trail(A, T, S) :- held(A, T, _), high_since_entry(A, T, H), atr(A, T, V), S = H - trail_atr * V.
-    rel stopped(A: Future, @T)
-    stopped(A, T) :- trail(A, T, S), close(A, T, P), P < S.
-  }
-  decisions {
-    silence hold
-    orders  moo
-    decide(T, trade(A, N)) :- breakout(A, T), flat(A, T), n_full(A, T, N).
-    decide(T, trade(A, Q)) :- stopped(A, T), held(A, T, Q0), Q = -Q0.
-  }
-  execution futures_house
-  report { calendar base   periods 252 per year }
-}
-```
-
-(`"HOUSE"` stands for whatever list the store's `schema("future")` names for the house universe; use that label or an `instruments` table from `catalog("future")`.) `max_prior_window[entry_rows, entry_rows, close]` takes a Duration in the library's signature; for a row count use `H = max(P1) over (T1 in prior_rows[entry_rows], close(A, T1, P1))` inline.
+`abt-idioms` §1 (daily futures) and §2 (intraday) are the checked skeletons; §3 to §5 add swings and Fibonacci, calendar counts and weekly averages. Start from one of them.
 
 ## 5. The checker's codes
 

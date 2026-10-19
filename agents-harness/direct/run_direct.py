@@ -94,10 +94,13 @@ def seed_rows() -> list[dict[str, str]]:
 
 def staged_roots() -> list[str]:
     roots = []
-    for line in (S / "logs" / "dbn" / "summary.log").read_text(encoding="utf-8").splitlines():
-        parts = line.split()
-        if len(parts) >= 3 and parts[1] == "exit" and parts[2] == "0":
-            roots.append(parts[0])
+    for log in (S / "logs" / "dbn" / "summary.log", S / "logs" / "dbn-live" / "summary.log"):
+        if not log.exists():
+            continue
+        for line in log.read_text(encoding="utf-8").splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and parts[1] == "exit" and parts[2] == "0":
+                roots.append(parts[0])
     return sorted(set(roots))
 
 
