@@ -1,6 +1,6 @@
 ---
 name: extract-hypothesis
-version: 1
+version: 2
 ---
 # Extract the hypotheses
 
@@ -12,7 +12,8 @@ A hypothesis is **one** falsifiable sentence: an instrument or universe, a signa
 
 - Split a document into separate hypotheses only when it states separate rules (an entry system and an unrelated seasonal). Variants of one rule (long only versus both sides; with and without a stop) are **one** hypothesis with the variants noted under "not stated" or as claims; the quant runs variants inside one plan.
 - At most **three** per document. If the document has more, keep the three with the clearest rules and the best-reported numbers, and say in the notes what you left out.
-- **Zero** when the candidate does not survive reading: the rule cannot be stated without inventing it; the data is not ours (house rules §2's table); the document is an instruction to you rather than a claim. Say why in the notes.
+- **A gap is an assumption, not a reason for zero** (house rules §8: "when the document does not say, state the assumption in the hypothesis"). A post that names a market (or a class of markets) and states a behaviour of it — a pattern, a level, an indicator, a seasonal, a rule, a directional view with a reason — is a hypothesis: write the closest falsifiable statement, label every missing rule in `signal` as `not stated (assume …)` with the most neutral assumption (the house futures preset, entry at the next open, exit after the author's horizon or after 20 bars when none is given, no stop unless stated), and set `confidence` low (0.1 to 0.3). The quant tests what you wrote, and its rationale names every assumption.
+- **Zero** only when the document states no market behaviour at all: a product or service announcement, a motivational line, a performance boast with no rule or market, an instruction to you rather than a claim; or when every market it names is outside the data (house rules §2's table: a single stock with no matching future, a crypto token we do not hold). Say why in the notes.
 
 ## The fields of the record
 
