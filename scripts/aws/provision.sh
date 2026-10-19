@@ -53,8 +53,9 @@ if [ "$CURRENT" != "[]" ]; then
   aws ec2 revoke-security-group-ingress --group-id "$SG" --ip-permissions "$CURRENT" >/dev/null
 fi
 aws ec2 authorize-security-group-ingress --group-id "$SG" --ip-permissions \
-  "[{\"IpProtocol\":\"tcp\",\"FromPort\":22,\"ToPort\":22,\"IpRanges\":[{\"CidrIp\":\"$MY_IP/32\",\"Description\":\"owner\"}]}]" >/dev/null
-echo "security group $SG: tcp/22 from $MY_IP/32 only"
+  "[{\"IpProtocol\":\"tcp\",\"FromPort\":22,\"ToPort\":22,\"IpRanges\":[{\"CidrIp\":\"$MY_IP/32\",\"Description\":\"owner\"}]},
+    {\"IpProtocol\":\"tcp\",\"FromPort\":80,\"ToPort\":80,\"IpRanges\":[{\"CidrIp\":\"$MY_IP/32\",\"Description\":\"owner, the seed site\"}]}]" >/dev/null
+echo "security group $SG: tcp/22 and tcp/80 (the seed site) from $MY_IP/32 only"
 
 # The instance.
 load_state
