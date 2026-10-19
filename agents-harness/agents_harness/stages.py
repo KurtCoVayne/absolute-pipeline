@@ -9,7 +9,7 @@ from typing import Any
 
 from .records import MAX_HYPOTHESES, AnalystOut, QuantOut, TriageOut, render_hypothesis, render_triage
 from .runner import build_agent, documents_block, prompt_hash, render_instructions, run_agent, user_input
-from .tools import Context, ProtocolEnd
+from .tools import Context, ProtocolEnd, end_refusal
 
 QUANT_REASONS = {"not_testable", "no_data", "could_not_check", "no_decisions"}
 
@@ -104,6 +104,15 @@ def run_quant(ctx: Context, *, model_id: str, client: Any) -> Outcome:
     )
     try:
         result = run_agent(agent, user, ctx, max_turns=_max_turns(ctx))
+        # An ending the protocol does not admit yet is refused, and the run goes on (twice at most).
+        for _ in range(2):
+            if ctx.quant.submission_record is not None:
+                break
+            refusal = end_refusal(ctx, result.final_output_as(QuantOut).outcome)
+            if refusal is None:
+                break
+            ctx.notes.append(refusal)
+            result = run_agent(agent, result.to_input_list() + [{"role": "user", "content": refusal}], ctx, max_turns=_max_turns(ctx))
     except ProtocolEnd as e:
         return Outcome(state="failed", reason=e.reason, detail=e.detail)
     q = ctx.quant

@@ -5,6 +5,8 @@ note. A tool for an ungranted capability does not exist in the agent."""
 from __future__ import annotations
 
 import json
+import os
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -56,6 +58,8 @@ class QuantState:
     """What the quant has done so far: the sequence the harness checks (guideline section 9)."""
 
     checks_used: int = 0
+    plan_attempts: int = 0
+    resolved: set[str] = field(default_factory=set)
     clean: dict[str, str] = field(default_factory=dict)  # program hash -> text, as the checker accepted it
     names: dict[str, str] = field(default_factory=dict)  # program hash -> strategy name
     first_program_hash: str | None = None
@@ -209,7 +213,14 @@ def _abt_catalog(ctx: Context) -> list[FunctionTool]:
     def resolve_symbols(symbols: list[str]) -> str:
         """What the author's symbols are in the store: abt_id, class, root, listed_from, listed_to."""
         ctx.meter.add_tool_call()
-        return _call(ctx, "resolve_symbols", {"symbols": symbols})
+        try:
+            result = _gateway(ctx, "resolve_symbols", {"symbols": symbols})
+        except GatewayError as e:
+            return _dumps(e.for_model())
+        for r in result if isinstance(result, list) else []:
+            if isinstance(r, dict) and r.get("available"):
+                ctx.quant.resolved.add(str(r.get("root") or r.get("symbol") or ""))
+        return _dumps({"ok": True, "result": result})
 
     return [function_tool(f, failure_error_function=None) for f in (catalog, schema, resolve_symbols)]
 
@@ -303,6 +314,7 @@ def _abt_plan(ctx: Context) -> list[FunctionTool]:
     def plan_check(plan: str, program_name: str, program: str) -> str:
         """Validate a plan without running it: its hash, normal form, trials_expected and steps, after the gateway's guards. `program_name` is the slug the plan's `program <slug>.dsl` names; `program` its text (checked clean)."""
         ctx.meter.add_tool_call()
+        q.plan_attempts += 1
         try:
             _validate_plan(ctx, plan, program_name, program)
         except guards.Refused as e:
@@ -312,6 +324,7 @@ def _abt_plan(ctx: Context) -> list[FunctionTool]:
     def plan_run(plan: str, program_name: str, program: str) -> str:
         """Run a plan (counted against plan_runs and grid_points): the plan hash, the runs with their decisions, and the report. `program_name` is the slug the plan's `program <slug>.dsl` names; `program` its text (checked clean)."""
         ctx.meter.add_tool_call()
+        q.plan_attempts += 1
         try:
             program_hash, holdout = _validate_plan(ctx, plan, program_name, program)
         except guards.Refused as e:
@@ -512,6 +525,40 @@ BUILDERS = {
     "abt.query_run": _abt_query_run,
     "abt.submit": _abt_submit,
 }
+
+
+MIN_CHECKS_BEFORE_GIVING_UP = 3
+
+
+def _roots_in_hypothesis(ctx: Context) -> set[str]:
+    """The staged roots (ABT_ROOTS) the hypothesis names, as words of its text."""
+    roots = {r for r in os.environ.get("ABT_ROOTS", "").split(",") if r}
+    text = json.dumps(ctx.inputs.hypothesis or {}, ensure_ascii=False).upper()
+    return {r for r in roots if re.search(rf"(?<![A-Z0-9]){re.escape(r)}(?![A-Z0-9])", text)}
+
+
+def end_refusal(ctx: Context, outcome: str) -> str | None:
+    """Why the quant may not end with `outcome` yet, as a message it can act on;
+    None when it may. `could_not_check` needs three checks; `not_testable`
+    needs one check when the idea's roots are in the store. A job that ran or
+    tried a plan has tried: its ending stands."""
+    q = ctx.quant
+    if outcome == "could_not_check" and q.checks_used < MIN_CHECKS_BEFORE_GIVING_UP and not q.plans and q.plan_attempts == 0:
+        return (
+            f"Refused: `could_not_check` needs at least {MIN_CHECKS_BEFORE_GIVING_UP} `check` calls and this job made {q.checks_used}. "
+            "Write the program and check it; read every diagnostic and fix it. The language expresses intraday session windows "
+            "(`abt-idioms` §2: decide at `session + 30min`, cumulative `close_at[M]` over `session(X, [0min, M))`), swings and "
+            "Fibonacci levels (§3), calendar counts (§4) and weekly averages (§5); a vague rule takes a labelled assumption (`write-strategy`, step 1)."
+        )
+    if outcome == "not_testable" and q.checks_used == 0 and (q.resolved or _roots_in_hypothesis(ctx)):
+        roots = ", ".join(sorted(q.resolved or _roots_in_hypothesis(ctx)))
+        return (
+            f"Refused: the idea's roots are in the store ({roots}) and no program was checked. `not_testable` is only for data the "
+            "store cannot hold (positioning, implied volatility, breadth, fundamentals); a missing rule or a house-rule detail is a "
+            "labelled assumption. Write the program from `abt-idioms` (§1 daily, §2 intraday session windows, §3 swings and "
+            "Fibonacci, §4 calendar counts) and `check` it."
+        )
+    return None
 
 
 def build_tools(ctx: Context) -> list[Tool]:
