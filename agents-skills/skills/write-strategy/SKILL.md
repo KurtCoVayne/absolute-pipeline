@@ -6,7 +6,7 @@ version: 1
 
 You are the quant. One `Hypothesis` with its documents is in `/job/in`; the information horizon `H`, the lineage and the budgets are in the job and in your token. You end with one `submit` or with one reasoned failure. The house rules §9 are the steps; this skill is the same steps with the exact tool calls (contracts §5) at each one. The harness checks the sequence: `submit` is refused until every checked step has happened.
 
-Your tools, by capability: `read_document(id)`; `catalog(class, predicate)`, `schema(class)`, `resolve_symbols(symbols)`; `query(form, r_max)`; `check(program, name)`, `contract(program, name)`, `show(program, name, what)`; `plan_check(plan, programs)`, `plan_run(plan, programs)`; `plan_report(plan_hash)`; `query_run(run_id, text)`; `submit(plan_hash, forward_plan_text, rationale)`; `note(text)`. Nothing else exists.
+Your tools, by capability: `read_document(doc_id)`; `catalog(class_name, predicate)`, `schema(class_name)`, `resolve_symbols(symbols)`; `query(form, r_max)`; `check(program, name)`, `contract(program, name)`, `show(program, name, what)`; `plan_check(plan, program_name, program)`, `plan_run(plan, program_name, program)`; `plan_report(plan_hash)`; `query_run(run_id, text)`; `submit(plan_hash, forward_plan_text, rationale)`; `note(text)`. Nothing else exists.
 
 ## Step 0 · Read the specification
 
@@ -26,14 +26,14 @@ Write the program (`abt-language`, `abt-idioms`): the nine blocks, `execution fu
 check(program=<text>, name="<slug>")
 ```
 
-Read every diagnostic; fix; call `check` again. You have `checks` (8) iterations; the harness ends the job as `could_not_check` at the ninth. Warnings are fixed or explained in a note. Keep the `program_hash` the clean check returns: it is `H(P)`, the lineage's first program.
+Read every diagnostic; fix; call `check` again. The text you later pass to `plan_run` must be byte for byte the text the clean check accepted (a changed program is checked again). You have `checks` (8) iterations; the harness ends the job as `could_not_check` at the ninth. Warnings are fixed or explained in a note. Keep the `program_hash` the clean check returns: it is `H(P)`, the lineage's first program.
 
 ## Step 3 · Translation check (checked: the notes must carry it)
 
 One liquid market, a short window, the plan template `check_<slug>` of `abt-plans-and-claims` §6, with `observe` on the relations you must recompute (the ATR, `n_full`, the signal, the stop):
 
 ```
-plan_run(plan=<check plan>, programs={"<slug>.dsl": <program text>})
+plan_run(plan=<check plan>, program_name="<slug>", program=<the program text exactly as the clean check accepted it>)
 ```
 
 Read `runs[0].decisions`: 0 means the program does not trade; go to `query_run(run_id, "coverage over <window>")` and fix the rule it names (a translation bug), then re-check and re-run (this spends the retry execution; say so in the notes). With trades, print them:
@@ -63,8 +63,8 @@ Every number comes from the ledgers and the observed relations you printed, not 
 The `idea_<slug>` template: `sanity` on the author's instrument and dates, `base` on the universe, `grid sens` on the two most important parameters (≤ 25 cells, the author's point in the middle), the parameter variants, `compare`, `reveal oos of base`, the default claims plus those of the hypothesis. `holdout trailing:20%`, `window <first bar> .. <H>` with `H` verbatim from the job.
 
 ```
-plan_check(plan=<development plan>, programs={"<slug>.dsl": <text>})     # the hash, trials_expected, the guards' answer
-plan_run(plan=<development plan>, programs={"<slug>.dsl": <text>})
+plan_check(plan=<development plan>, program_name="<slug>", program=<text>)     # the hash, trials_expected, the guards' answer
+plan_run(plan=<development plan>, program_name="<slug>", program=<text>)
 plan_report(plan_hash=<the hash>)
 ```
 
@@ -97,7 +97,7 @@ Only when the author's timing or costs are ambiguous and it matters: a second pr
 Write the `forward_<slug>` plan: the same program hash, the submitted point (the author's, or the plateau's centre declared as such), `holdout after <H>`, the `survives_costs` claim. Validate it:
 
 ```
-plan_check(plan=<forward plan>, programs={"<slug>.dsl": <text>})
+plan_check(plan=<forward plan>, program_name="<slug>", program=<text>)
 ```
 
 Then submit:

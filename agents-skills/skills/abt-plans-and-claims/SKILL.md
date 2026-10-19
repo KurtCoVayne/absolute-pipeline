@@ -4,7 +4,7 @@ version: 1
 ---
 # Plans and claims
 
-A program is run only under a **plan** (`study`, Q-2.1), and every run is a counted trial of the program's lineage (Prop. Q-2.2). The plan says what runs, on what window, what is held out, what is claimed, and the gateway admits only plans in the house's shape (PL-6.4, PL-6.6). You pass plans to `plan_check(plan, programs)` (validated, not run) and `plan_run(plan, programs)` (run, counted), with `programs = {"<slug>.dsl": "<program text>"}` naming every program the plan reads.
+A program is run only under a **plan** (`study`, Q-2.1), and every run is a counted trial of the program's lineage (Prop. Q-2.2). The plan says what runs, on what window, what is held out, what is claimed, and the gateway admits only plans in the house's shape (PL-6.4, PL-6.6). You pass plans to `plan_check(plan, program_name, program)` (validated, not run) and `plan_run(plan, program_name, program)` (run, counted), with `program_name` the slug the plan's `program <slug>.dsl` line names and `program` that program's text as the checker accepted it.
 
 ## 1. The syntax
 
