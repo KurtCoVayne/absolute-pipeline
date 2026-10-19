@@ -16,6 +16,7 @@ from .budget import Meter
 from .envelope import envelope
 from .gateway import Gateway, GatewayError
 from .job import Inputs
+from .local import LocalAbt
 from .skills import blake3_hex
 
 MAX_TOOL_OUTPUT = 60_000
@@ -70,7 +71,7 @@ class QuantState:
 class Context:
     inputs: Inputs
     meter: Meter
-    gateway: Gateway | None
+    gateway: Gateway | LocalAbt | None
     notes: list[str] = field(default_factory=list)
     quant: QuantState = field(default_factory=QuantState)
     skills_hash: str = ""

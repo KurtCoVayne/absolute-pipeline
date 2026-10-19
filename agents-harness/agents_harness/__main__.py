@@ -13,7 +13,9 @@ from pathlib import Path
 
 from .budget import BudgetExceeded, Meter, load_rates, rate_for
 from .gateway import Gateway
+from .guards import h_text
 from .job import JobError, job_dir_from_env, load_inputs
+from .local import LocalAbt
 from .output import write_cost, write_notes, write_records, write_status
 from .runner import InvalidOutput, ModelUnavailable, make_client
 from .skills import DefinitionError, SkillError, skills_hash
@@ -40,7 +42,14 @@ def main(argv: list[str] | None = None) -> int:
     job = inputs.job
     model_id = job.model or inputs.definition.model.id
     meter = Meter(budget=job.budget, model=model_id, rate=rate_for(model_id, load_rates()))
-    gateway = Gateway(token=inputs.token, deadline=lambda: meter.remaining_s) if os.environ.get("ABT_GATEWAY") or any(c.startswith("abt.") for c in job.caps) else None
+    gateway: Gateway | LocalAbt | None
+    if os.environ.get("ABT_LOCAL") == "1" and any(c.startswith("abt.") for c in job.caps):
+        # The owner's cut of Oct 19: the tools answered by `abt` on the machine itself.
+        gateway = LocalAbt(h=h_text(job.h), work=out_dir / "abt")
+    elif os.environ.get("ABT_GATEWAY") or any(c.startswith("abt.") for c in job.caps):
+        gateway = Gateway(token=inputs.token, deadline=lambda: meter.remaining_s)
+    else:
+        gateway = None
     ctx = Context(inputs=inputs, meter=meter, gateway=gateway, skills_hash=skills_hash([(s.name, s.raw) for s in inputs.skills]))
 
     stage = STAGES.get(job.stage)

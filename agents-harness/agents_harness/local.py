@@ -1,0 +1,482 @@
+"""The quant's tools against `abt` on the machine itself (the owner's cut of Oct 19:
+no gateway, no queue, no sandbox). `ABT_LOCAL=1` makes `python -m agents_harness`
+use `LocalAbt` in place of the HTTP gateway: the same route names and result
+shapes (contracts section 5), each answered by the `abt` command line.
+
+Two rules survive the cut and are enforced here before `abt` sees a plan: the
+plan's `window` ends at the job's H with `holdout trailing:20%`, and its
+`budget` is `money 0`. A third keeps the runs inside the machine's means: the
+window starts no earlier than three years before H (a futures run streams every
+staged root's minute bars). Data queries read `r <= H`.
+
+Environment: `ABT_BIN` (the `abt` binary), `ABT_LIB` (the library sources, a
+glob or a space-separated list), `ABT_DATA` (the data service's socket),
+`ABT_STORE` (the store, read-only reads), `ABT_WORK` (where programs, plans and
+answers are written), `ABT_ROOTS` (the futures roots staged, comma-separated).
+"""
+
+from __future__ import annotations
+
+import glob
+import hashlib
+import json
+import os
+import re
+import subprocess
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+from .gateway import GatewayError
+
+MAX_ROWS = 500
+MAX_TEXT = 40_000
+WINDOW_YEARS = 3
+_WINDOW = re.compile(r"^(\s*window\s+)(\S+)(\s*\.\.\s*)(\S+)", re.M)
+_HOLDOUT = re.compile(r"^\s*holdout\s+(\S+)", re.M)
+_BUDGET = re.compile(r"^\s*budget\s*\{([^}]*)\}", re.M)
+_PROGRAM = re.compile(r"^\s*program\s+(\S+)", re.M)
+_STRATEGY = re.compile(r"^\s*strategy\s+([A-Za-z_][A-Za-z0-9_]*)", re.M)
+_DIAG = re.compile(r"^(error|warning)\s+\[([A-Za-z0-9-]+)\]\s+(.*)$")
+
+
+def _iso(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _parse_time(s: str) -> datetime:
+    s = s.strip().rstrip("Z")
+    if "." in s:
+        s = s.split(".", 1)[0]
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(UTC).replace(tzinfo=None)
+    return dt
+
+
+def parse_table(text: str, max_rows: int = MAX_ROWS) -> dict[str, Any]:
+    """`abt data query`'s answer (a request line, then `a | b | c` rows) as
+    `{columns, rows, truncated}`."""
+    lines = [ln for ln in text.splitlines() if " | " in ln or ln.strip().startswith("row |")]
+    if not lines:
+        return {"columns": [], "rows": [], "truncated": False, "text": text[:MAX_TEXT]}
+    cols = [c.strip() for c in lines[0].split("|")]
+    rows: list[list[Any]] = []
+    for ln in lines[1:]:
+        cells = [c.strip() for c in ln.split("|")]
+        rows.append([_num(c) for c in cells])
+    if cols and cols[0] == "row":
+        cols = cols[1:]
+        rows = [r[1:] for r in rows]
+    return {"columns": cols, "rows": rows[:max_rows], "truncated": len(rows) > max_rows}
+
+
+def _num(c: str) -> Any:
+    if c == "":
+        return None
+    try:
+        if re.fullmatch(r"-?\d+", c):
+            return int(c)
+        return float(c) if re.fullmatch(r"-?\d+(\.\d+)?([eE][-+]?\d+)?", c) else c
+    except ValueError:
+        return c
+
+
+class LocalAbt:
+    """`Gateway`'s interface (`call`, `calls`, `answers`, `close`) over the `abt` CLI."""
+
+    def __init__(self, h: str, work: Path | None = None) -> None:
+        self.bin = os.environ.get("ABT_BIN", "/srv/absolute/absolute-backtest/target/release/abt")
+        lib = os.environ.get("ABT_LIB", "/srv/absolute/absolute-backtest/corpus-v2/catalog/*.dsl /srv/absolute/absolute-backtest/corpus-v2/lib/*.dsl")
+        self.lib: list[str] = sorted(p for pat in lib.split() for p in glob.glob(pat))
+        self.data = os.environ.get("ABT_DATA", "/srv/absolute/run/data.sock")
+        self.store = os.environ.get("ABT_STORE", "/srv/absolute/store")
+        self.work = work or Path(os.environ.get("ABT_WORK", "/tmp/abt-work"))
+        self.work.mkdir(parents=True, exist_ok=True)
+        self.roots = [r for r in os.environ.get("ABT_ROOTS", "").split(",") if r]
+        self.h_text = h
+        self.h = _parse_time(h)
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.answers: list[Any] = []
+        self.plans: dict[str, dict[str, Any]] = {}
+
+    def close(self) -> None:
+        pass
+
+    # ------------------------------------------------------------------ plumbing
+
+    def call(self, route: str, body: dict[str, Any]) -> Any:
+        self.calls.append((route, body))
+        handler = getattr(self, f"_r_{route}", None)
+        try:
+            if handler is None:
+                raise GatewayError("no_route", f"no route `{route}` in the local mode")
+            result = handler(body)
+        except GatewayError as e:
+            self.answers.append(e.for_model())
+            self._log(route, body, e.for_model())
+            raise
+        self.answers.append(result)
+        self._log(route, body, result)
+        return result
+
+    def _log(self, route: str, body: dict[str, Any], answer: Any) -> None:
+        with (self.work / "calls.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"route": route, "body": body, "answer": answer}, default=str)[:200_000] + "\n")
+
+    def _abt(self, args: list[str], timeout: float = 3600.0) -> subprocess.CompletedProcess[str]:
+        try:
+            return subprocess.run([self.bin, *args], capture_output=True, text=True, timeout=timeout, cwd=self.work)
+        except subprocess.TimeoutExpired as e:
+            raise GatewayError("timeout", f"abt {args[0]} {args[1] if len(args) > 1 else ''} took over {timeout:.0f} s; narrow the window or the universe") from e
+
+    def _write(self, name: str, text: str) -> Path:
+        p = self.work / name
+        p.write_text(text, encoding="utf-8")
+        return p
+
+    def _query_store(self, text: str, max_rows: int = MAX_ROWS) -> dict[str, Any]:
+        r = self._abt(["data", "query", "--store", self.store, text], timeout=600)
+        if r.returncode != 0:
+            raise GatewayError("query", (r.stderr or r.stdout).strip()[:2000])
+        return parse_table(r.stdout, max_rows)
+
+    # ------------------------------------------------------------------ the catalog
+
+    def _r_catalog(self, body: dict[str, Any]) -> Any:
+        cls = str(body.get("class") or "")
+        args = ["data", "catalog", "--store", self.store] + (["--class", cls] if cls else [])
+        r = self._abt(args, timeout=300)
+        text = (r.stdout or r.stderr)[:MAX_TEXT]
+        pred = str(body.get("predicate") or "").strip()
+        if pred:
+            value = pred.split("=", 1)[-1].strip().strip("\"'")
+            text = "\n".join(ln for ln in text.splitlines() if value.lower() in ln.lower()) or f"(no line of the catalog mentions {value})"
+        extra: dict[str, Any] = {}
+        if cls in ("", "future") and self.roots:
+            roots = self.roots
+            if pred:
+                value = pred.split("=", 1)[-1].strip().strip("\"'").upper()
+                roots = [r for r in self.roots if r == value] or self.roots
+            extra["futures_roots_staged"] = [self._root_entry(r) for r in roots]
+        return {
+            "text": text,
+            **extra,
+            "note": "futures: back-adjusted continuous series per root at @1m (daily views by `@session` or a sessions calendar); equities: Norgate S&P 500 members since 2014 at @1d",
+        }
+
+    def _root_ids(self) -> dict[str, int]:
+        """The staged roots' data-layer ids: the `continuous` root ids, named by the `ticker` registry
+        (equities share symbols: ES is a Norgate stock too, so only continuous roots are kept)."""
+        if getattr(self, "_ids", None) is not None:
+            return self._ids
+        ids: dict[str, int] = {}
+        try:
+            roots = {int(r[0]) for r in self._query_store(f"continuous latest at {self.h_text}", 100_000)["rows"] if r and isinstance(r[0], int)}
+            cache = Path(os.environ.get("ABT_TICKERS", "/srv/absolute/direct/ticker.json"))
+            names = json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else {}
+            for i, sym in names.items():
+                if int(i) in roots and sym in self.roots:
+                    ids[sym] = int(i)
+        except (GatewayError, ValueError, OSError):
+            pass
+        self._ids: dict[str, int] | None = ids
+        return ids
+
+    def _root_entry(self, root: str) -> dict[str, Any]:
+        return {
+            "root": root,
+            "abt_id": self._root_ids().get(root),
+            "query_key": f"{root}.v.0",
+            "in_a_program": f"instruments {{ {root} from <date> }} in the universe block names the root by its symbol (as corpus-v2's r8l.dsl does)",
+            "in_a_query": f'identity ["{root}.v.0"] (the continuous back-adjusted series)',
+        }
+
+    def _r_schema(self, body: dict[str, Any]) -> Any:
+        cls = str(body.get("class") or "future")
+        texts = [Path(p).read_text(encoding="utf-8") for p in self.lib if Path(p).name == f"{cls}.dsl"]
+        return {"text": "\n".join(texts)[:MAX_TEXT] or f"no catalog file for class {cls}", "futures_roots_staged": self.roots if cls == "future" else None}
+
+    def _r_resolve_symbols(self, body: dict[str, Any]) -> Any:
+        out = []
+        for s in body.get("symbols") or []:
+            sym = str(s).upper().lstrip("$").replace("/", "")
+            root = sym[:-1] if sym.endswith("1!") else sym
+            if root in self.roots:
+                out.append({"symbol": s, "class": "future", "available": True, **self._root_entry(root)})
+                continue
+            try:
+                t = self._query_store(f"ticker where symbol = {sym}", 5)
+                found = bool(t.get("rows"))
+            except GatewayError:
+                found = False
+            out.append(
+                {"symbol": s, "class": "equity" if found else None, "root": None, "available": found, "note": None if found else "not in the store (futures staged: " + ",".join(self.roots) + ")"}
+            )
+        return out
+
+    # ------------------------------------------------------------------ data
+
+    def _r_query(self, body: dict[str, Any]) -> Any:
+        f = body.get("form") or {}
+        rel = str(f.get("relation") or "")
+        if not rel:
+            raise GatewayError("malformed", "a query names its relation (class.relation)")
+        kind = str(f.get("kind") or "scan")
+        parts = [rel]
+        if kind == "latest":
+            parts.append("latest")
+        if kind in ("point", "section", "latest") and (f.get("t") or f.get("t_max")):
+            parts.append(f"at {f.get('t') or f.get('t_max')}")
+        elif f.get("t0") or f.get("t1"):
+            parts.append(f"over {f.get('t0') or '1900-01-01'}..{f.get('t1') or self.h_text}")
+        ids = [self._key(str(i)) for i in (f.get("identity") or [])]
+        pred = str(f.get("predicate") or "").strip()
+        m = re.fullmatch(r"(?:root|symbol|A)\s*=\s*[\"']?([A-Za-z0-9.]+)[\"']?", pred)
+        if m and rel.startswith("future."):
+            ids.append(self._key(m.group(1)))
+            pred = ""
+        if ids:
+            parts.append("for " + ",".join(ids))
+        if pred:
+            parts.append(f"where {pred}")
+        r_max = self.h
+        if body.get("r_max"):
+            try:
+                r_max = min(r_max, _parse_time(str(body["r_max"])))
+            except ValueError:
+                pass
+        parts.append(f"r <= {_iso(r_max)}")
+        table = self._query_store(" ".join(parts))
+        table["query"] = " ".join(parts)
+        return table
+
+    def _key(self, ident: str) -> str:
+        """A futures root's symbol as its query key (`NQ` -> `NQ.v.0`); anything else as written."""
+        up = ident.upper()
+        return f"{up}.v.0" if up in self.roots else ident
+
+    # ------------------------------------------------------------------ programs
+
+    def _program_files(self, programs: dict[str, str]) -> list[str]:
+        paths = []
+        for name, text in programs.items():
+            fname = name if name.endswith(".dsl") else f"{name}.dsl"
+            paths.append(str(self._write(fname, text)))
+        return paths
+
+    def _hash(self, name: str, files: list[str]) -> str:
+        r = self._abt(["hash", "--strategy", name, *self.lib, *files], timeout=120)
+        m = re.search(r"\b([0-9a-f]{64})\b", r.stdout)
+        return m.group(1) if m else ""
+
+    def _r_check(self, body: dict[str, Any]) -> Any:
+        program = str(body.get("program") or "")
+        name = (_STRATEGY.search(program) or [None, str(body.get("name") or "idea")])[1]
+        files = self._program_files({f"{name}.dsl": program})
+        r = self._abt(["check", *self.lib, *files], timeout=300)
+        diags = []
+        for ln in (r.stdout + "\n" + r.stderr).splitlines():
+            m = _DIAG.match(ln.strip())
+            if m:
+                diags.append({"severity": m.group(1), "code": m.group(2), "message": m.group(3)})
+        dof = next((ln.split(":", 1)[1].strip() for ln in r.stdout.splitlines() if "degrees of freedom" in ln), None)
+        errors = [d for d in diags if d["severity"] == "error"]
+        result: dict[str, Any] = {"diagnostics": diags, "degrees_of_freedom": dof, "summary": r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr.strip()[-400:]}
+        if not errors:
+            result["program_hash"] = self._hash(name, files)
+        return result
+
+    def _r_contract(self, body: dict[str, Any]) -> Any:
+        program = str(body.get("program") or "")
+        name = (_STRATEGY.search(program) or [None, "idea"])[1]
+        files = self._program_files({f"{name}.dsl": program})
+        r = self._abt(["contract", "--strategy", name, *self.lib, *files], timeout=300)
+        return {"text": (r.stdout or r.stderr)[:MAX_TEXT]}
+
+    def _r_show(self, body: dict[str, Any]) -> Any:
+        program = str(body.get("program") or "")
+        name = (_STRATEGY.search(program) or [None, "idea"])[1]
+        files = self._program_files({f"{name}.dsl": program})
+        what = str(body.get("what") or "program")
+        args = ["show", "plan", "--strategy", name] if what == "plan" else ["show", "--strategy", name]
+        r = self._abt([*args, *self.lib, *files], timeout=300)
+        return {"text": (r.stdout or r.stderr)[:MAX_TEXT]}
+
+    # ------------------------------------------------------------------ plans
+
+    def guard_plan(self, plan: str) -> str:
+        """The rules that survive the cut; the plan's text, unchanged, when it passes."""
+        w = _WINDOW.search(plan)
+        if not w:
+            raise GatewayError("holdout", f"a plan writes `window <start> .. {self.h_text}` (the window ends at H)")
+        end = w.group(4)
+        try:
+            end_dt = _parse_time(end)
+        except ValueError as e:
+            raise GatewayError("holdout", f"the window's end `{end}` is not a time; write `.. {self.h_text}`") from e
+        if end_dt != self.h:
+            raise GatewayError("holdout", f"the window ends at H: write `window {w.group(2)} .. {self.h_text}`; the plan says `.. {end}`")
+        try:
+            start_dt = _parse_time(w.group(2))
+        except ValueError as e:
+            raise GatewayError("window", f"the window's start `{w.group(2)}` is not a date") from e
+        earliest = self.h - timedelta(days=365 * WINDOW_YEARS + 1)
+        if start_dt < earliest:
+            raise GatewayError(
+                "window",
+                f"the window starts no earlier than {WINDOW_YEARS} years before H on this machine (a futures run streams every staged root's minute bars; "
+                f"one run over eight years took six minutes): write `window {earliest.date().isoformat()} .. {self.h_text}` or later",
+            )
+        h = _HOLDOUT.search(plan)
+        if not h or h.group(1) != "trailing:20%":
+            raise GatewayError("holdout", "the development plan's hold-out is `holdout trailing:20%`")
+        b = _BUDGET.search(plan)
+        if not b or not re.search(r"\bmoney\s+0\b(?![.\d])", b.group(1)):
+            raise GatewayError("budget", "the plan's budget is `budget { money 0; bytes 2G; requests 0 }`: no data is bought")
+        return plan
+
+    def _plan_files(self, body: dict[str, Any]) -> tuple[Path, list[str], str]:
+        plan = self.guard_plan(str(body.get("plan") or ""))
+        programs = {str(k): str(v) for k, v in (body.get("programs") or {}).items()}
+        files = self._program_files(programs)
+        m = re.search(r"^\s*study\s+([A-Za-z_]\w*)", plan, re.M)
+        study = m.group(1) if m else "idea"
+        path = self._write(f"{study}.study", plan)
+        return path, files, study
+
+    def _r_plan_check(self, body: dict[str, Any]) -> Any:
+        path, files, _ = self._plan_files(body)
+        r = self._abt(["plan", "check", str(path), *files, *self.lib, "--data", self.data, "--json"], timeout=900)
+        if r.returncode != 0:
+            raise GatewayError("plan", (r.stderr or r.stdout).strip()[-3000:])
+        try:
+            return json.loads(r.stdout)
+        except ValueError:
+            return {"text": r.stdout[:MAX_TEXT]}
+
+    def _r_plan_run(self, body: dict[str, Any]) -> Any:
+        path, files, study = self._plan_files(body)
+        r = self._abt(["plan", "run", str(path), *files, *self.lib, "--data", self.data, "--kernels", "1", "--json"], timeout=3000)
+        if r.returncode != 0:
+            raise GatewayError("plan", (r.stderr or r.stdout).strip()[-3000:])
+        run = json.loads(r.stdout)
+        plan_hash = str(run.get("hash", ""))
+        reveal = None
+        steps = re.findall(r"^\s*reveal\s+(\w+)\s+of", str(body.get("plan") or ""), re.M)
+        for step in steps[:1]:
+            rv = self._abt(["plan", "reveal", str(path), step, *files, *self.lib, "--data", self.data, "--kernels", "1", "--json"], timeout=3000)
+            if rv.returncode == 0:
+                try:
+                    reveal = json.loads(rv.stdout)
+                except ValueError:
+                    reveal = {"text": rv.stdout[:MAX_TEXT]}
+            else:
+                reveal = {"error": (rv.stderr or rv.stdout).strip()[-2000:]}
+        tables = self._tables(plan_hash)
+        runs = [
+            {
+                "step": o.get("step"),
+                "run_id": o.get("run_id"),
+                "status": o.get("status"),
+                "point": o.get("point"),
+                "decisions": int((o.get("trading") or {}).get("decisions") or (o.get("trading") or {}).get("trades") or o.get("decisions") or (o.get("returns") or {}).get("n") or 0),
+                "returns": o.get("returns"),
+                "trading": o.get("trading"),
+            }
+            for o in run.get("outcomes", [])
+        ]
+        report = {"plan_run": run, "reveal": reveal, "tables": tables}
+        record = {"plan_hash": plan_hash, "study": study, "plan": str(body.get("plan") or ""), "programs": body.get("programs") or {}, "runs": runs, "report": report}
+        self.plans[plan_hash] = record
+        (self.work / f"plan-{plan_hash[:16]}.json").write_text(json.dumps(record, default=str), encoding="utf-8")
+        (self.work / "last_plan.json").write_text(json.dumps(record, default=str), encoding="utf-8")
+        self._nav(record)
+        brief = {
+            "plan_hash": plan_hash,
+            "program_hash": run.get("program_hash"),
+            "lineage": run.get("lineage"),
+            "runs": [{k: v for k, v in x.items() if k in ("step", "run_id", "status", "point", "decisions")} for x in runs],
+            "outcomes": [{"step": o.get("step"), "point": o.get("point"), "returns": o.get("returns"), "trading": o.get("trading")} for o in run.get("outcomes", [])][:12],
+            "grids": run.get("grids"),
+            "dsr": run.get("dsr"),
+            "trial_kinds": run.get("trial_kinds"),
+            "reveal": [{"step": o.get("step"), "returns": o.get("returns"), "trading": o.get("trading")} for o in (reveal or {}).get("outcomes", [])] if isinstance(reveal, dict) else reveal,
+            "warnings": [w.get("message", "")[:300] for w in run.get("warnings", [])][:8],
+        }
+        return {"plan_hash": plan_hash, "runs": brief["runs"], "report": brief}
+
+    def _tables(self, plan_hash: str) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        if not plan_hash:
+            return out
+        for t in ("summary", "contribution", "subperiods", "surface", "trials", "claims", "contract", "warnings"):
+            try:
+                out[t] = self._query_store(f"query.{plan_hash}.report.{t}", 2000)
+            except GatewayError as e:
+                out[t] = {"error": str(e)[:300]}
+        return out
+
+    def _nav(self, record: dict[str, Any]) -> None:
+        """The NAV of the base run and of the reveal (the whole window), as CSV beside the plan."""
+        report = record["report"]
+        wanted = []
+        rv = report.get("reveal")
+        if isinstance(rv, dict):
+            for o in rv.get("outcomes", []):
+                if o.get("run_id"):
+                    wanted.append(("reveal", o["run_id"]))
+        for r in record["runs"]:
+            if r.get("step") == "base" and r.get("run_id"):
+                wanted.append(("base", r["run_id"]))
+        for label, run_id in wanted:
+            try:
+                t = self._query_store(f"kernel.{run_id}.book", 100_000)
+            except GatewayError:
+                continue
+            cols = t.get("columns", [])
+            if "t" not in cols or "nav" not in cols:
+                continue
+            ti, ni = cols.index("t"), cols.index("nav")
+            ii = cols.index("instrument") if "instrument" in cols else None
+            lines = ["t,nav"]
+            for row in t["rows"]:
+                if ii is not None and row[ii] not in (None, ""):
+                    continue
+                lines.append(f"{row[ti]},{row[ni]}")
+            (self.work / f"nav-{label}-{record['plan_hash'][:16]}.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def _r_plan_report(self, body: dict[str, Any]) -> Any:
+        ph = str(body.get("plan_hash") or "")
+        rec = self.plans.get(ph)
+        if rec is None:
+            raise GatewayError("no_plan", f"{ph} is not a plan this job ran")
+        run = rec["report"]["plan_run"]
+        tables = rec["report"]["tables"]
+        return {
+            "summary": [{"step": o.get("step"), "point": o.get("point"), "returns": o.get("returns"), "trading": o.get("trading")} for o in run.get("outcomes", [])],
+            "grids": run.get("grids"),
+            "dsr": run.get("dsr"),
+            "trials": {"count": run.get("trials"), "kinds": run.get("trial_kinds")},
+            "claims": run.get("claims"),
+            "reveal": rec["report"].get("reveal") and [{"step": o.get("step"), "returns": o.get("returns"), "trading": o.get("trading")} for o in rec["report"]["reveal"].get("outcomes", [])],
+            "contribution": {k: v for k, v in (tables.get("contribution") or {}).items() if k != "text"},
+            "warnings": [w.get("message", "")[:300] for w in run.get("warnings", [])][:12],
+        }
+
+    def _r_query_run(self, body: dict[str, Any]) -> Any:
+        run_id = str(body.get("run_id") or "")
+        out: dict[str, Any] = {
+            "note": "in the local mode a run is read from its stored tables (fills, decisions); the kernel's interactive forms are not served",
+        }
+        for t in ("fills", "decisions"):
+            try:
+                out[t] = self._query_store(f"kernel.{run_id}.{t}", 80)
+            except GatewayError as e:
+                out[t] = {"error": str(e)[:300]}
+        return out
+
+    def _r_submit(self, body: dict[str, Any]) -> Any:
+        sid = hashlib.blake2b(json.dumps(body, sort_keys=True, default=str).encode("utf-8"), digest_size=32).hexdigest()
+        (self.work / "submission.json").write_text(json.dumps({"submission_id": sid, **body}, default=str), encoding="utf-8")
+        return {"submission_id": sid, "forward_plan_hash": ""}
