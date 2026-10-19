@@ -82,6 +82,40 @@ def _num(c: str) -> Any:
         return c
 
 
+def available_gb() -> float:
+    """MemAvailable from /proc/meminfo, in GB (a large number off Linux)."""
+    try:
+        for ln in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
+            if ln.startswith("MemAvailable:"):
+                return int(ln.split()[1]) / 1024 / 1024
+    except OSError:
+        pass
+    return 1e9
+
+
+def failure_text(r: subprocess.CompletedProcess[str], what: str) -> str:
+    """Why an `abt` call failed, for the model: the exit status, and stderr's
+    first 2,000 characters with repeated lines once. A process killed by a
+    signal (the out-of-memory killer) writes nothing; say so."""
+    if r.returncode < 0:
+        head = (
+            f"{what} was killed by signal {-r.returncode} before it finished: on this machine that is the out-of-memory killer "
+            "(a futures run streams every minute bar of its roots from the `need`'s date). Narrow the window or the roots, "
+            "put `need bars @1m from` at the window's start less the warm-up, and run again."
+        )
+    else:
+        head = f"{what} failed (exit {r.returncode})."
+    seen: set[str] = set()
+    lines = []
+    for ln in (r.stderr or r.stdout or "").splitlines():
+        t = ln.strip()
+        if t and t not in seen and not t.startswith("warning [W"):
+            seen.add(t)
+            lines.append(t)
+    detail = "\n".join(lines)[:2000]
+    return head + ("\n" + detail if detail else "")
+
+
 # The metric rows the model reads of an outcome (the full JSON stays on disk).
 _RETURNS = ("n", "total_return", "cagr", "volatility", "sharpe", "max_drawdown", "max_drawdown_duration")
 _TRADING = ("decisions", "fills", "turnover", "dropped")
@@ -389,9 +423,10 @@ class LocalAbt:
 
     def _r_plan_run(self, body: dict[str, Any]) -> Any:
         path, files, study = self._plan_files(body)
-        r = self._abt(["plan", "run", str(path), *files, *self.lib, "--data", self.data, "--kernels", "1", "--json"], timeout=3000)
+        kernels = "2" if available_gb() >= 24 else "1"  # grid points in parallel only with room for two bindings
+        r = self._abt(["plan", "run", str(path), *files, *self.lib, "--data", self.data, "--kernels", kernels, "--json"], timeout=3000)
         if r.returncode != 0:
-            raise GatewayError("plan", (r.stderr or r.stdout).strip()[-3000:])
+            raise GatewayError("plan", failure_text(r, "abt plan run"))
         run = json.loads(r.stdout)
         plan_hash = str(run.get("hash", ""))
         reveal = None
@@ -404,7 +439,7 @@ class LocalAbt:
                 except ValueError:
                     reveal = {"text": rv.stdout[:MAX_TEXT]}
             else:
-                reveal = {"error": (rv.stderr or rv.stdout).strip()[-2000:]}
+                reveal = {"error": failure_text(rv, "abt plan reveal")}
         tables = self._tables(plan_hash)
         runs = [
             {
@@ -497,16 +532,43 @@ class LocalAbt:
         }
 
     def _r_query_run(self, body: dict[str, Any]) -> Any:
+        """The kernel's query language on a run this job made (`? BODY …`, `why`, `why not`, `trace R at DATE`,
+        `coverage over …`, `show …`, `ledger R`): `abt query` re-runs the run's program at its point over its
+        window and answers. Minutes on futures; ask several questions in one call, separated by `;;`."""
         run_id = str(body.get("run_id") or "")
-        out: dict[str, Any] = {
-            "note": "in the local mode a run is read from its stored tables (fills, decisions); the kernel's interactive forms are not served",
-        }
-        for t in ("fills", "decisions"):
-            try:
-                out[t] = self._query_store(f"kernel.{run_id}.{t}", 80)
-            except GatewayError as e:
-                out[t] = {"error": str(e)[:300]}
-        return out
+        text = str(body.get("text") or "").strip()
+        if not text:
+            raise GatewayError("malformed", "a query_run names its text")
+        found = None
+        for rec in self.plans.values():
+            for r in rec.get("runs") or []:
+                if r.get("run_id") == run_id:
+                    found = (rec, r)
+        if found is None:
+            raise GatewayError("no_run", f"{run_id} is not a run of a plan this job ran")
+        rec, run = found
+        files = self._program_files(rec.get("programs") or {})
+        program = next(iter((rec.get("programs") or {}).values()), "")
+        name = (_STRATEGY.search(program) or [None, "idea"])[1]
+        plan = str(rec.get("plan") or "")
+        m = re.search(r"^\s*window\s+(\S+)\s*\.\.\s*(\S+)", plan, re.M)
+        step = str(run.get("step") or "")
+        # The step's own `over D1 .. D2`, up to the next step on the same line.
+        over = re.search(rf"\brun\s+{re.escape(step)}\b(?:(?!\b(?:run|grid|reveal|report|compare|walk_forward)\b)[^\n])*?\bover\s+(\S+)\s*\.\.\s*(\S+)", plan) if step else None
+        start, end = (over.group(1), over.group(2)) if over else ((m.group(1), m.group(2)) if m else ("", self.h_text))
+        args = ["query", "--strategy", name, "--data", self.data]
+        if start:
+            args += ["--start", start[:10]]
+        args += ["--end", (end or self.h_text)[:10]]
+        for k, v in run.get("point") or []:
+            args += ["--param", f"{k}={v}"]
+        for q in [t.strip() for t in text.split(";;") if t.strip()][:6]:
+            args += ["--text", q]
+        r = self._abt([*args, *self.lib, *files], timeout=1200)
+        if r.returncode != 0:
+            raise GatewayError("query_run", failure_text(r, "abt query"))
+        lines = [ln for ln in r.stdout.splitlines() if not ln.startswith("warning [W")]
+        return {"run_id": run_id, "window": f"{start} .. {end}", "point": run.get("point"), "text": "\n".join(lines)[:MAX_TEXT]}
 
     def _r_submit(self, body: dict[str, Any]) -> Any:
         sid = hashlib.blake2b(json.dumps(body, sort_keys=True, default=str).encode("utf-8"), digest_size=32).hexdigest()

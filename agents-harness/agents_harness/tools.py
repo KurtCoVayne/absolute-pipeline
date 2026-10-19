@@ -405,7 +405,7 @@ def _abt_query_run(ctx: Context) -> list[FunctionTool]:
     q = ctx.quant
 
     def query_run(run_id: str, text: str) -> str:
-        """Ask the kernel about a run this job made: `? …`, `why …`, `why not …`, `trace decide at …`, `coverage over …`, `show …`, `ledger R`."""
+        """Ask the kernel about a run this job made: `? BODY at DATE` or `over D1 .. D2`, `why R(…)`, `why not R(A, T)`, `trace R at DATE`, `coverage over D1 .. D2`, `show program|plan R|calendars`, `ledger R`. The run is re-run at its point over its window, which takes minutes on futures: put several questions in one call, separated by `;;`."""
         ctx.meter.add_tool_call()
         if run_id not in q.run_ids:
             return _refused("no_run", f"{run_id} is not a run this job made: {sorted(q.run_ids)}")

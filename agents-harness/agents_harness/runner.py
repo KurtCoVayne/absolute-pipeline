@@ -208,6 +208,39 @@ def run_config(agent_name: str, ctx: Context) -> RunConfig:
     return RunConfig(tracing_disabled=True, workflow_name=f"{agent_name}:{ctx.inputs.job.id}", tool_not_found_behavior="return_error_to_model", tool_error_formatter=formatter)
 
 
+# One event loop for the whole job: the OpenAI client pools connections bound
+# to the loop that opened them, and a second `asyncio.run` closed that loop
+# under them ("Event loop is closed" when the pool tidied a connection).
+_LOOP: asyncio.AbstractEventLoop | None = None
+
+
+def job_loop() -> asyncio.AbstractEventLoop:
+    global _LOOP
+    if _LOOP is None or _LOOP.is_closed():
+        _LOOP = asyncio.new_event_loop()
+        asyncio.set_event_loop(_LOOP)
+    return _LOOP
+
+
+def shutdown(client: Any) -> None:
+    """Close the client inside the job's loop, then the loop; never raises
+    (the status is written before this runs)."""
+    global _LOOP
+    loop = _LOOP
+    if loop is None or loop.is_closed():
+        return
+    try:
+        close = getattr(client, "close", None)
+        if close is not None:
+            loop.run_until_complete(close())
+        loop.run_until_complete(loop.shutdown_asyncgens())
+    except Exception:  # noqa: BLE001 - teardown after the job's outcome is written
+        pass
+    finally:
+        loop.close()
+        _LOOP = None
+
+
 def run_agent(agent: Agent[Context], user_input: str | list[Any], ctx: Context, *, max_turns: int) -> RunResult:
     """One run under the budget: the wall clock bounds it, the hooks meter it."""
 
@@ -219,7 +252,7 @@ def run_agent(agent: Agent[Context], user_input: str | list[Any], ctx: Context, 
 
     set_tracing_disabled(True)
     try:
-        return asyncio.run(go())
+        return job_loop().run_until_complete(go())
     except UserError as e:
         # The SDK wraps a tool's exception; the budget's and the protocol's end come through it.
         raise _unwrap(e) from e

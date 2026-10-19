@@ -17,7 +17,7 @@ from .guards import h_text
 from .job import JobError, job_dir_from_env, load_inputs
 from .local import LocalAbt
 from .output import write_cost, write_notes, write_records, write_status
-from .runner import InvalidOutput, ModelUnavailable, make_client
+from .runner import InvalidOutput, ModelUnavailable, make_client, shutdown
 from .skills import DefinitionError, SkillError, skills_hash
 from .stages import STAGES
 from .tools import Context
@@ -58,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_INTERNAL
 
     code = EXIT_OK
+    client = None
     try:
         client = make_client(job.id)
         outcome = stage(ctx, model_id=model_id, client=client)
@@ -81,8 +82,14 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         write_notes(out_dir, ctx.notes)
         write_cost(out_dir, meter.cost())
-        if gateway is not None:
-            gateway.close()
+        # Teardown after the outcome is written is never fatal.
+        try:
+            if gateway is not None:
+                gateway.close()
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+        if client is not None:
+            shutdown(client)
     return code
 
 
