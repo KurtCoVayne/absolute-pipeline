@@ -122,7 +122,14 @@ impl Verifier {
         if let Some(c) = cap {
             builder = builder.check(format!("check if cap({})", quoted(c)).as_str()).map_err(invalid)?;
         }
-        let mut authorizer = builder.policy("allow if true").map_err(invalid)?.build(&token).map_err(invalid)?;
+        // The authorizer's default time limit is a millisecond, which a loaded
+        // machine overruns on a valid token: the facts are a dozen, so a
+        // generous bound costs nothing.
+        let limits = biscuit_auth::AuthorizerLimits {
+            max_time: std::time::Duration::from_millis(500),
+            ..Default::default()
+        };
+        let mut authorizer = builder.policy("allow if true").map_err(invalid)?.set_limits(limits).build(&token).map_err(invalid)?;
         if let Err(e) = authorizer.authorize() {
             let msg = e.to_string();
             return Err(match cap {

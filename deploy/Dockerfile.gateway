@@ -1,0 +1,33 @@
+# abt-gateway (PL-8.4): the tool API and the forward scheduler, with the
+# Kafka client, over the three services' sockets mounted from the host.
+# The backtester's crates are git dependencies of a private repository:
+# the build stage receives a synced tree at /src/absolute-backtest and
+# patches the git source to it (as deploy/up.sh does on the machine), and
+# the image carries its corpus-v2 catalog and library for --library.
+
+FROM rust:1.95-bookworm AS build
+RUN apt-get update && apt-get install -y --no-install-recommends cmake libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+WORKDIR /src/absolute-pipeline
+COPY . .
+# The synced backtester tree, beside the pipeline (deploy/up.sh syncs it).
+COPY --from=backtester / /src/absolute-backtest
+RUN mkdir -p .cargo && printf '%s\n' \
+  '[patch."https://github.com/KurtCoVayne/absolute-backtest"]' \
+  'abt = { path = "/src/absolute-backtest/crates/abt" }' \
+  'abt-wire = { path = "/src/absolute-backtest/crates/abt-wire" }' \
+  'abt-data = { path = "/src/absolute-backtest/crates/abt-data" }' \
+  'abt-kernel = { path = "/src/absolute-backtest/crates/abt-kernel" }' \
+  'abt-query = { path = "/src/absolute-backtest/crates/abt-query" }' \
+  'abt-tests = { path = "/src/absolute-backtest/crates/abt-tests" }' \
+  > .cargo/config.local.toml \
+  && cargo build --release -p abt-gateway --features kafka --config .cargo/config.local.toml
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=build /src/absolute-pipeline/target/release/abt-gateway /usr/local/bin/abt-gateway
+COPY --from=build /src/absolute-backtest/corpus-v2/catalog /opt/abt/corpus-v2/catalog
+COPY --from=build /src/absolute-backtest/corpus-v2/lib /opt/abt/corpus-v2/lib
+# The sockets of the three services and the token's public key are mounted
+# from the host (compose: /run/abt and /etc/absolute-pipeline).
+ENTRYPOINT ["abt-gateway"]
+CMD ["serve", "--store-sockets-dir", "/run/abt", "--library", "/opt/abt/corpus-v2/catalog", "--library", "/opt/abt/corpus-v2/lib", "--listen", "127.0.0.1:7777", "--token-public-key", "/etc/absolute-pipeline/token_public_key"]
