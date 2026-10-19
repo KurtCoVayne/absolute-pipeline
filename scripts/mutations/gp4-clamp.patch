@@ -1,0 +1,17 @@
+# property: GP-4 (Proposition PL-4.2: no row received after H through any form)
+# mutation: the clamp takes the r_max asked for when one is asked, past H or not
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 no_answer_holds_a_row_received_after_h
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/query.rs b/crates/abt-gateway/src/query.rs
+index c1cf7bf..8adf636 100644
+--- a/crates/abt-gateway/src/query.rs
++++ b/crates/abt-gateway/src/query.rs
+@@ -364,7 +364,7 @@ pub fn request(form: QueryForm) -> QueryRequest {
+ /// `as_of_seq := seq(h)` when known, whatever the request asked.
+ pub fn clamp(req: &mut QueryRequest, h: i64, seq_h: Option<u64>) {
+     let asked = req.receipt_filter.as_ref().and_then(|f| f.r_max);
+-    let r_max = asked.map_or(h, |r| r.min(h));
++    let r_max = asked.unwrap_or(h);
+     req.receipt_filter = Some(Box::new(ReceiptFilter { r_max: Some(r_max) }));
+     let mut view = req.view.take().map(|v| *v).unwrap_or(View {
+         versions: None,
