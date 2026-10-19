@@ -47,8 +47,9 @@ dbn_views() { # dataset dir, views dir
     echo "$r"
   done
 }
-order() { # the roots of `dbn_views`, the ones named in FIRST first
+order() { # the roots of `dbn_views`, the ones named in FIRST (or the file first.txt) first
   local all; all=$(cat)
+  [ -z "${FIRST:-}" ] && [ -f /srv/absolute/full/first.txt ] && FIRST=$(cat /srv/absolute/full/first.txt)
   if [ -n "${ONLY:-}" ]; then for r in $ONLY; do echo "$all" | grep -qx "$r" && echo "$r"; done; return; fi
   for r in ${FIRST:-}; do echo "$all" | grep -qx "$r" && echo "$r"; done
   for r in $all; do case " ${FIRST:-} " in *" $r "*) ;; *) echo "$r";; esac; done
