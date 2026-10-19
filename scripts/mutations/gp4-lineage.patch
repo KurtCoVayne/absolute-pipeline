@@ -1,0 +1,17 @@
+# property: GP-4 (a plan with a program outside the lineage is refused)
+# mutation: a plan naming no program sent takes the first one
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/plan.rs b/crates/abt-gateway/src/plan.rs
+index a78a1f4..75e0ccf 100644
+--- a/crates/abt-gateway/src/plan.rs
++++ b/crates/abt-gateway/src/plan.rs
+@@ -476,7 +476,7 @@ pub fn program_of<'a>(s: &Study, programs: &'a BTreeMap<String, String>) -> Resu
+         Some(x) => x,
+         None => {
+             let name = want.trim_end_matches(".dsl");
+-            programs.iter().find(|(_, t)| strategy_name(t).as_deref() == Some(name)).map(|(k, t)| (k.as_str(), t)).ok_or_else(|| {
++            programs.iter().find(|(_, t)| strategy_name(t).as_deref() == Some(name)).map(|(k, t)| (k.as_str(), t)).or_else(|| programs.iter().next().map(|(k, t)| (k.as_str(), t))).ok_or_else(|| {
+                 refuse(
+                     "lineage",
+                     format!(

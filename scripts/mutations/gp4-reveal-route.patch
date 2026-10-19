@@ -1,0 +1,26 @@
+# property: GP-4 (plan_reveal from an agent is refused: no route)
+# mutation: a plan_reveal route exists and runs the plan under abt.plan
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/api.rs b/crates/abt-gateway/src/api.rs
+index d0a1a3e..56414f5 100644
+--- a/crates/abt-gateway/src/api.rs
++++ b/crates/abt-gateway/src/api.rs
+@@ -138,7 +138,7 @@ pub fn capability(route: &str) -> Option<&'static str> {
+         "catalog" | "schema" | "resolve_symbols" => "abt.catalog",
+         "query" => "abt.query",
+         "check" | "contract" | "show" => "abt.check",
+-        "plan_check" | "plan_run" => "abt.plan",
++        "plan_check" | "plan_run" | "plan_reveal" => "abt.plan",
+         "plan_report" => "abt.report",
+         "query_run" => "abt.query_run",
+         "submit" => "abt.submit",
+@@ -452,7 +452,7 @@ impl Gateway {
+             "contract" => self.contract(body),
+             "show" => self.show(body),
+             "plan_check" => self.plan_check(grant, body),
+-            "plan_run" => self.plan_run(grant, body),
++            "plan_run" | "plan_reveal" => self.plan_run(grant, body),
+             "plan_report" => self.plan_report(grant, body),
+             "query_run" => self.query_run(grant, body),
+             "submit" => self.submit(grant, body, now),

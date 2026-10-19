@@ -1,0 +1,18 @@
+# property: GP-4 (a plan off the house presets is refused)
+# mutation: every execution block passes the preset guard
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/plan.rs b/crates/abt-gateway/src/plan.rs
+index a78a1f4..c4bbcb8 100644
+--- a/crates/abt-gateway/src/plan.rs
++++ b/crates/abt-gateway/src/plan.rs
+@@ -512,6 +512,9 @@ pub const HOUSE: [&str; 2] = ["futures_house", "equities_house"];
+ /// house preset, or one of them `with { one field }` in a strategy named
+ /// for that field; no inline block, no preset defined by the agent.
+ pub fn preset_guard(programs: &BTreeMap<String, String>) -> Result<(), Refusal> {
++    if !programs.is_empty() {
++        return Ok(());
++    }
+     for (file, text) in programs {
+         let clean = strip_comments(text);
+         let strategy = strategy_name(&clean).unwrap_or_default();

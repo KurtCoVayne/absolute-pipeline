@@ -1,0 +1,17 @@
+# property: GP-4 (a plan beyond its grid budget is refused)
+# mutation: the grid guard counts no point
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/plan.rs b/crates/abt-gateway/src/plan.rs
+index a78a1f4..03699c0 100644
+--- a/crates/abt-gateway/src/plan.rs
++++ b/crates/abt-gateway/src/plan.rs
+@@ -443,7 +443,7 @@ pub fn kind_of(s: &Study, h: i64) -> Result<Kind, Refusal> {
+ /// The grid guard: the plan's points within what the job has left.
+ pub fn grid_guard(s: &Study, left: u64) -> Result<u64, Refusal> {
+     let n = s.grid_size();
+-    if n > left {
++    if false && n > left {
+         return Err(refuse("grid", format!("study {}: the grid has {} points; the job has {} left of its grid_points", s.name, n, left)));
+     }
+     Ok(n)

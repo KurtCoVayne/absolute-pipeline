@@ -1,0 +1,27 @@
+# property: GP-4 (a submit whose hashes name a plan the job did not run is refused)
+# mutation: the hashes are not checked against the plans the job ran
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/api.rs b/crates/abt-gateway/src/api.rs
+index d0a1a3e..1a6b138 100644
+--- a/crates/abt-gateway/src/api.rs
++++ b/crates/abt-gateway/src/api.rs
+@@ -1084,17 +1084,7 @@ impl Gateway {
+         if let Some(earlier) = self.jobs.state(&grant.job).submission {
+             return Err(ApiError::new(409, "submitted", format!("job {} already submitted {}", grant.job, earlier)));
+         }
+-        match self.jobs.program_of(&grant.job, plan_hash) {
+-            Some(p) if p == program_hash => {}
+-            Some(p) => {
+-                return Err(ApiError::new(
+-                    409,
+-                    "hashes",
+-                    format!("plan {} ran program {}, not {}", short(plan_hash), short(&p), short(program_hash)),
+-                ))
+-            }
+-            None => return Err(ApiError::new(409, "hashes", format!("plan {} is not one this job ran", short(plan_hash)))),
+-        }
++        let _ = self.jobs.program_of(&grant.job, plan_hash);
+         // The program as submitted hashes to the hash submitted.
+         let name = plan::strategy_name(program_text).ok_or_else(|| ApiError::new(400, "malformed", "`program_text` declares no strategy"))?;
+         let sources = self.layers.sources_for(program_text, &name);

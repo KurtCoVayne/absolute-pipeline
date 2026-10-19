@@ -1,0 +1,17 @@
+# property: GP-4 (a plan beyond its plan-execution budget is refused)
+# mutation: the plan-execution counter never refuses
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/jobs.rs b/crates/abt-gateway/src/jobs.rs
+index f1a8465..3c6c48b 100644
+--- a/crates/abt-gateway/src/jobs.rs
++++ b/crates/abt-gateway/src/jobs.rs
+@@ -121,7 +121,7 @@ impl Jobs {
+     /// before anything runs.
+     pub fn reserve_plan(&self, grant: &Grant, points: u64) -> Result<(), Refusal> {
+         self.with(&grant.job, |s| {
+-            if s.plan_runs >= grant.plan_runs {
++            if false && s.plan_runs >= grant.plan_runs {
+                 return Err(Refusal {
+                     code: "plan_runs",
+                     message: format!("job {} ran {} plans, its budget (out_of_budget(plan_runs))", grant.job, s.plan_runs),
