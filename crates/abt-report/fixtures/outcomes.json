@@ -1,0 +1,104 @@
+[
+  {
+    "id": "184604634f9348b83c829ff3c28fa3de80d22897ed843536eaf1f76bb74f1b01",
+    "submission_id": "be4b0fe084de2171070cc9644d8920555d5f1dfb045039c366760353552ea41c",
+    "reveal": 1,
+    "r": "2026-10-11T06:00:00Z",
+    "forward_from": "2026-09-18T19:12:36Z",
+    "forward_to": "2026-10-11T00:00:00Z",
+    "verdicts": [
+      "survives_costs: holds",
+      "not_overfit: fails",
+      "profitable: fails"
+    ],
+    "metrics": "{\"forward\":{\"return\":9.4,\"volatility\":11.2,\"sharpe\":1.12,\"mar\":0.56,\"max_drawdown\":0.0832,\"drawdown_duration\":0.2,\"trades\":6.0,\"profit_factor\":1.52,\"hit_rate\":0.41,\"avg_win_loss\":2.3},\"trials\":{\"check\":1,\"sanity\":1,\"base\":1,\"grid\":25,\"variant\":3,\"reveal\":1},\"dsr\":0.902,\"psr\":0.93,\"min_track_record\":{\"required\":104.0,\"observed\":26.0,\"unit\":\"weeks\"},\"pairs\":[{\"claim\":\"survives_costs\",\"insample\":\"holds\",\"forward\":\"holds\",\"p_value\":0.021},{\"claim\":\"not_overfit\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.08},{\"claim\":\"profitable\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.08799999999999997}]}",
+    "status": "Forward",
+    "retired_reason": null,
+    "record": "Outcome"
+  },
+  {
+    "id": "dcf49d7ed840e1cd2f0f442cb2b828e870496e69d2731e7971a9fd19376170fb",
+    "submission_id": "be4b0fe084de2171070cc9644d8920555d5f1dfb045039c366760353552ea41c",
+    "reveal": 2,
+    "r": "2026-10-18T06:00:00Z",
+    "forward_from": "2026-09-18T19:12:36Z",
+    "forward_to": "2026-10-18T00:00:00Z",
+    "verdicts": [
+      "survives_costs: holds",
+      "not_overfit: fails",
+      "profitable: fails"
+    ],
+    "metrics": "{\"forward\":{\"return\":9.4,\"volatility\":11.2,\"sharpe\":1.12,\"mar\":0.56,\"max_drawdown\":0.0832,\"drawdown_duration\":0.2,\"trades\":11.0,\"profit_factor\":1.52,\"hit_rate\":0.41,\"avg_win_loss\":2.3},\"trials\":{\"check\":1,\"sanity\":1,\"base\":1,\"grid\":25,\"variant\":3,\"reveal\":2},\"dsr\":0.912,\"psr\":0.93,\"min_track_record\":{\"required\":104.0,\"observed\":52.0,\"unit\":\"weeks\"},\"pairs\":[{\"claim\":\"survives_costs\",\"insample\":\"holds\",\"forward\":\"holds\",\"p_value\":0.021},{\"claim\":\"not_overfit\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.08},{\"claim\":\"profitable\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.08799999999999997}]}",
+    "status": "Forward",
+    "retired_reason": null,
+    "record": "Outcome"
+  },
+  {
+    "id": "bdf8a06b59631fd0569cf2e2e0de9c1b72cbca5eceba69ad6d2284776ded4e02",
+    "submission_id": "6ac0835b75f3b80523c2ee71eeb0ee4588cd66fddc66e47a4efb6b466419f075",
+    "reveal": 1,
+    "r": "2026-10-11T06:00:00Z",
+    "forward_from": "2026-09-23T15:03:06Z",
+    "forward_to": "2026-10-11T00:00:00Z",
+    "verdicts": [
+      "survives_costs: fails",
+      "not_overfit: fails",
+      "profitable: fails"
+    ],
+    "metrics": "{\"forward\":{\"return\":5.1,\"volatility\":9.8,\"sharpe\":0.64,\"mar\":0.32,\"max_drawdown\":0.0596,\"drawdown_duration\":0.2,\"trades\":6.0,\"profit_factor\":1.41,\"hit_rate\":0.66,\"avg_win_loss\":0.78},\"trials\":{\"check\":1,\"sanity\":1,\"base\":1,\"grid\":25,\"variant\":3,\"reveal\":1},\"dsr\":0.721,\"psr\":0.78,\"min_track_record\":{\"required\":156.0,\"observed\":26.0,\"unit\":\"weeks\"},\"pairs\":[{\"claim\":\"survives_costs\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.09},{\"claim\":\"not_overfit\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.21},{\"claim\":\"profitable\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.269}]}",
+    "status": "Forward",
+    "retired_reason": null,
+    "record": "Outcome"
+  },
+  {
+    "id": "1668a570367ef7316fbf7010de0a12083d80f7b0a9a27757971fbed7fb00385a",
+    "submission_id": "6ac0835b75f3b80523c2ee71eeb0ee4588cd66fddc66e47a4efb6b466419f075",
+    "reveal": 2,
+    "r": "2026-10-18T06:00:00Z",
+    "forward_from": "2026-09-23T15:03:06Z",
+    "forward_to": "2026-10-18T00:00:00Z",
+    "verdicts": [
+      "survives_costs: fails",
+      "not_overfit: fails",
+      "profitable: fails"
+    ],
+    "metrics": "{\"forward\":{\"return\":5.1,\"volatility\":9.8,\"sharpe\":0.64,\"mar\":0.32,\"max_drawdown\":0.0596,\"drawdown_duration\":0.2,\"trades\":12.0,\"profit_factor\":1.41,\"hit_rate\":0.66,\"avg_win_loss\":0.78},\"trials\":{\"check\":1,\"sanity\":1,\"base\":1,\"grid\":25,\"variant\":3,\"reveal\":2},\"dsr\":0.731,\"psr\":0.78,\"min_track_record\":{\"required\":156.0,\"observed\":52.0,\"unit\":\"weeks\"},\"pairs\":[{\"claim\":\"survives_costs\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.09},{\"claim\":\"not_overfit\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.21},{\"claim\":\"profitable\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.269}]}",
+    "status": "Forward",
+    "retired_reason": null,
+    "record": "Outcome"
+  },
+  {
+    "id": "4373b0f2f4b381280dc5d24218f2cc459fc8a4d6918c2afefaecf9683b732adb",
+    "submission_id": "b63288ae30697a4aded672060988254571b0a144a8c54f78cb2aa90fdc9f0007",
+    "reveal": 1,
+    "r": "2026-10-11T06:00:00Z",
+    "forward_from": "2026-09-19T13:00:01Z",
+    "forward_to": "2026-10-11T00:00:00Z",
+    "verdicts": [
+      "survives_costs: fails",
+      "not_overfit: fails",
+      "profitable: fails"
+    ],
+    "metrics": "{\"forward\":{\"return\":0.8,\"volatility\":4.1,\"sharpe\":0.21,\"mar\":0.105,\"max_drawdown\":0.0356,\"drawdown_duration\":0.2,\"trades\":6.0,\"profit_factor\":1.38,\"hit_rate\":0.61,\"avg_win_loss\":0.92},\"trials\":{\"check\":1,\"sanity\":1,\"base\":1,\"grid\":25,\"variant\":3,\"reveal\":1},\"dsr\":0.412,\"psr\":0.55,\"min_track_record\":{\"required\":310.0,\"observed\":26.0,\"unit\":\"weeks\"},\"pairs\":[{\"claim\":\"survives_costs\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.31},{\"claim\":\"not_overfit\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.44},{\"claim\":\"profitable\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.5880000000000001}]}",
+    "status": "Forward",
+    "retired_reason": null,
+    "record": "Outcome"
+  },
+  {
+    "id": "d69752b2d4f1b5e73a9c6fabdcbda17f0899be6036e947e2c38689dae602c8b1",
+    "submission_id": "86c43842d17212c9241d2aebcd4ac1efd0286fc30e29ea573385c1501e878556",
+    "reveal": 1,
+    "r": "2026-10-11T06:00:00Z",
+    "forward_from": "2026-09-18T11:46:08Z",
+    "forward_to": "2026-10-11T00:00:00Z",
+    "verdicts": [
+      "survives_costs: holds",
+      "not_overfit: fails",
+      "profitable: fails"
+    ],
+    "metrics": "{\"forward\":{\"return\":8.2,\"volatility\":12.4,\"sharpe\":0.88,\"mar\":0.44,\"max_drawdown\":0.0964,\"drawdown_duration\":0.2,\"trades\":39.0,\"profit_factor\":1.33,\"hit_rate\":0.37,\"avg_win_loss\":2.6},\"trials\":{\"check\":1,\"sanity\":1,\"base\":1,\"grid\":25,\"variant\":3,\"reveal\":1},\"dsr\":0.845,\"psr\":0.86,\"min_track_record\":{\"required\":120.0,\"observed\":26.0,\"unit\":\"weeks\"},\"pairs\":[{\"claim\":\"survives_costs\",\"insample\":\"holds\",\"forward\":\"holds\",\"p_value\":0.04},{\"claim\":\"not_overfit\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.12},{\"claim\":\"profitable\",\"insample\":\"holds\",\"forward\":\"fails\",\"p_value\":0.15500000000000003}]}",
+    "status": "Forward",
+    "retired_reason": null,
+    "record": "Outcome"
+  }
+]

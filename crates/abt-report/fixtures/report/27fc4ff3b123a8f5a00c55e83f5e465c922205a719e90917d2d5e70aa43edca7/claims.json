@@ -1,0 +1,69 @@
+{
+  "columns": [
+    "name",
+    "test",
+    "input",
+    "phase",
+    "policy",
+    "insample",
+    "oos",
+    "p_value",
+    "p_adjusted",
+    "statistic",
+    "level"
+  ],
+  "rows": [
+    [
+      "survives_costs",
+      "bootstrap_sharpe",
+      "returns of base",
+      "after",
+      "warn",
+      "holds",
+      "holds",
+      0.127,
+      0.165,
+      0.44,
+      0.05
+    ],
+    [
+      "not_overfit",
+      "pbo",
+      "grid sens",
+      "after",
+      "warn",
+      "holds",
+      "holds",
+      0.249,
+      0.324,
+      0.22,
+      0.05
+    ],
+    [
+      "profitable",
+      "dsr",
+      "returns of base",
+      "after",
+      "warn",
+      "holds",
+      "fails",
+      0.413,
+      0.537,
+      0.61,
+      0.05
+    ],
+    [
+      "robust_rsi_len",
+      "surface_smoothness",
+      "grid sens",
+      "after",
+      "warn",
+      "holds",
+      "undecidable(the hold-out has no grid)",
+      0.215,
+      0.28,
+      0.8,
+      0.05
+    ]
+  ]
+}

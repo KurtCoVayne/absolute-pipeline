@@ -1,0 +1,250 @@
+{
+  "columns": [
+    "bias",
+    "owner",
+    "status",
+    "source"
+  ],
+  "rows": [
+    [
+      "historical revision",
+      "data",
+      "data-guaranteed",
+      "point-in-time versions by receipt"
+    ],
+    [
+      "point in time by receipt",
+      "data",
+      "data-guaranteed",
+      "ReceiptFilter.r_max = H"
+    ],
+    [
+      "latency",
+      "data",
+      "measured",
+      "receipt minus event time per relation"
+    ],
+    [
+      "stale price",
+      "data",
+      "measured",
+      "bars after the last tick"
+    ],
+    [
+      "look-ahead",
+      "kernel",
+      "guaranteed",
+      "the clock and the embargo by truncation"
+    ],
+    [
+      "bar resolution",
+      "kernel",
+      "modeled",
+      "daily bars, close fills"
+    ],
+    [
+      "execution timing",
+      "kernel",
+      "modeled",
+      "moo_moc"
+    ],
+    [
+      "partial fill",
+      "kernel",
+      "warned",
+      "W3"
+    ],
+    [
+      "transaction cost",
+      "kernel",
+      "modeled",
+      "per_contract 3.75"
+    ],
+    [
+      "slippage",
+      "kernel",
+      "open",
+      "none for starters (owner, Oct 19)"
+    ],
+    [
+      "impact",
+      "kernel",
+      "open",
+      "none"
+    ],
+    [
+      "liquidity",
+      "kernel",
+      "measured",
+      "participation against volume"
+    ],
+    [
+      "spread",
+      "kernel",
+      "open",
+      "none"
+    ],
+    [
+      "leverage",
+      "kernel",
+      "guaranteed",
+      "unconstrained, book halts on ruin"
+    ],
+    [
+      "funding",
+      "kernel",
+      "modeled",
+      "none on futures"
+    ],
+    [
+      "shorting",
+      "kernel",
+      "guaranteed",
+      "futures"
+    ],
+    [
+      "borrow",
+      "kernel",
+      "guaranteed",
+      "futures"
+    ],
+    [
+      "corporate action",
+      "kernel",
+      "guaranteed",
+      "not applicable"
+    ],
+    [
+      "delisting",
+      "kernel",
+      "modeled",
+      "last_price"
+    ],
+    [
+      "cash management",
+      "kernel",
+      "modeled",
+      "fixed capital"
+    ],
+    [
+      "portfolio construction",
+      "kernel",
+      "modeled",
+      "risk per trade"
+    ],
+    [
+      "rebalancing",
+      "kernel",
+      "modeled",
+      "on signal"
+    ],
+    [
+      "survivorship",
+      "query",
+      "data-guaranteed",
+      "the house list is point in time"
+    ],
+    [
+      "selection",
+      "query",
+      "measured",
+      "feed statistic: 1 of 1 universes"
+    ],
+    [
+      "data snooping",
+      "query",
+      "measured",
+      "lineage trials: 31"
+    ],
+    [
+      "multiple testing",
+      "query",
+      "measured",
+      "BH over 4 claims"
+    ],
+    [
+      "overfitting",
+      "query",
+      "measured",
+      "PBO over the grid"
+    ],
+    [
+      "parameter over-optimisation",
+      "query",
+      "measured",
+      "surface smoothness"
+    ],
+    [
+      "p-hacking",
+      "query",
+      "guaranteed",
+      "claims pre-registered"
+    ],
+    [
+      "false significance",
+      "query",
+      "measured",
+      "DSR over the lineage"
+    ],
+    [
+      "short sample",
+      "query",
+      "measured",
+      "minimum track-record length"
+    ],
+    [
+      "out-of-sample",
+      "query",
+      "guaranteed",
+      "trailing:20% hold-out revealed once"
+    ],
+    [
+      "walk-forward",
+      "query",
+      "measured",
+      "4 folds"
+    ],
+    [
+      "autocorrelation",
+      "query",
+      "modeled",
+      "Lo's standard error"
+    ],
+    [
+      "non-stationarity",
+      "query",
+      "measured",
+      "sub-period Sharpe"
+    ],
+    [
+      "regime",
+      "query",
+      "measured",
+      "sub-period table"
+    ],
+    [
+      "tail risk",
+      "query",
+      "measured",
+      "skew, largest loss"
+    ],
+    [
+      "label leakage",
+      "query",
+      "guaranteed",
+      "the embargo"
+    ],
+    [
+      "feature leakage",
+      "query",
+      "guaranteed",
+      "the embargo"
+    ],
+    [
+      "universe leakage",
+      "program",
+      "guaranteed",
+      "the house list, W9 clean"
+    ]
+  ]
+}

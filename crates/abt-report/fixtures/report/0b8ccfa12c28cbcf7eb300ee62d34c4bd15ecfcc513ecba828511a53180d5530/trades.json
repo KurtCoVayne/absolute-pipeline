@@ -1,0 +1,48 @@
+{
+  "columns": [
+    "stat",
+    "value"
+  ],
+  "rows": [
+    [
+      "count",
+      418.0
+    ],
+    [
+      "avg_trade_usd",
+      3449.282
+    ],
+    [
+      "avg_win_usd",
+      8278.278
+    ],
+    [
+      "avg_loss_usd",
+      -3794.211
+    ],
+    [
+      "largest_loss_usd",
+      -16500.0
+    ],
+    [
+      "risk_per_trade_usd",
+      7500.0
+    ],
+    [
+      "round_turn_cost_usd",
+      7.5
+    ],
+    [
+      "skew",
+      1.1
+    ],
+    [
+      "holding_days",
+      47.265
+    ],
+    [
+      "winners_pct",
+      38.0
+    ]
+  ]
+}
