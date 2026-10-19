@@ -6,8 +6,9 @@ import json
 import re
 
 import blake3
+import pytest
 
-from agents_harness.skills import CLOSED_CAPS, blake3_hex, load_definition, parse_skill, skills_hash
+from agents_harness.skills import CLOSED_CAPS, SkillError, blake3_hex, load_definition, parse_skill, skills_hash
 
 from .conftest import REPO, SKILLS_ROOT
 
@@ -68,3 +69,20 @@ def test_skills_hash_is_blake3_of_the_sorted_canonical_list() -> None:
 def test_the_repository_skills_hash_is_stable_across_orderings() -> None:
     items = [(n, (SKILLS_ROOT / "skills" / n / "SKILL.md").read_bytes()) for n in NINE]
     assert skills_hash(items) == skills_hash(sorted(items))
+
+
+def test_the_job_directorys_skill_wins_over_the_fallback(tmp_path) -> None:
+    from agents_harness.skills import load_skills
+
+    fallback = tmp_path / "opt-skills"
+    (fallback / "abt-idioms").mkdir(parents=True)
+    (fallback / "abt-idioms" / "SKILL.md").write_bytes(b"---\nname: abt-idioms\nversion: 9\n---\nfallback body\n")
+    (fallback / "triage").mkdir()
+    (fallback / "triage" / "SKILL.md").write_bytes(b"---\nname: triage\nversion: 9\n---\nfallback triage\n")
+    job = tmp_path / "job"
+    (job / "in" / "skills" / "triage").mkdir(parents=True)
+    (job / "in" / "skills" / "triage" / "SKILL.md").write_bytes(b"---\nname: triage\nversion: 1\n---\njob body\n")
+    skills = load_skills(("triage", "abt-idioms"), job, fallback)
+    assert [(s.name, s.version, s.body.strip()) for s in skills] == [("triage", "1", "job body"), ("abt-idioms", "9", "fallback body")]
+    with pytest.raises(SkillError):
+        load_skills(("house-rules",), job, fallback)

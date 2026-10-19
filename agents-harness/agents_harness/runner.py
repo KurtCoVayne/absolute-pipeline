@@ -22,9 +22,10 @@ from agents import (
     RunResult,
     ToolErrorFormatterArgs,
     input_guardrail,
+    output_guardrail,
     set_tracing_disabled,
 )
-from agents.exceptions import MaxTurnsExceeded, UserError
+from agents.exceptions import MaxTurnsExceeded, OutputGuardrailTripwireTriggered, UserError
 from agents.items import ModelResponse
 
 from .budget import BudgetExceeded
@@ -139,6 +140,34 @@ async def content_is_data_guardrail(context: RunContextWrapper[Context], agent: 
     return GuardrailFunctionOutput(output_info={"flagged": sorted(found)}, tripwire_triggered=False)
 
 
+class InvalidOutput(Exception):
+    """The structured output is not a record the pipeline may carry: the job fails as `invalid_output`."""
+
+
+def _strings_of(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings_of(v)]
+    if isinstance(value, list | tuple):
+        return [s for v in value for s in _strings_of(v)]
+    if hasattr(value, "model_dump"):
+        return _strings_of(value.model_dump())
+    return []
+
+
+@output_guardrail(name="records_carry_no_envelope_markup")
+async def records_guardrail(context: RunContextWrapper[Context], agent: Agent[Context], output: Any) -> GuardrailFunctionOutput:
+    """A record's text is rendered into later prompts (the hypothesis into the
+    quant's), so markup that imitates an envelope or a system message in an
+    output field is a re-injection, never a quote: the harness neutralises
+    `<document` inside documents, so a verbatim quote cannot carry it."""
+    hits = [span for text in _strings_of(output) for what, span in scan(text) if what == "envelope markup"]
+    if hits:
+        context.context.notes.append(f"The agent's output carries envelope markup {sorted(set(hits))}; the output is refused as invalid_output.")
+    return GuardrailFunctionOutput(output_info={"markup": hits}, tripwire_triggered=bool(hits))
+
+
 def build_agent(name: str, instructions: str, ctx: Context, output_type: type[Any] | None, *, model_id: str, client: openai.AsyncOpenAI) -> Agent[Context]:
     return Agent[Context](
         name=name,
@@ -147,6 +176,7 @@ def build_agent(name: str, instructions: str, ctx: Context, output_type: type[An
         model=OpenAIResponsesModel(model=model_id, openai_client=client),
         model_settings=ModelSettings(extra_headers={"X-Pipeline-Job": ctx.inputs.job.id}, store=False),
         input_guardrails=[content_is_data_guardrail],
+        output_guardrails=[records_guardrail],
         output_type=output_type,
     )
 
@@ -184,6 +214,8 @@ def run_agent(agent: Agent[Context], user_input: str, ctx: Context, *, max_turns
         raise BudgetExceeded("wall_s", ctx.meter.wall_s, ctx.meter.budget.wall_s) from e
     except MaxTurnsExceeded as e:
         raise BudgetExceeded("turns", max_turns, max_turns) from e
+    except OutputGuardrailTripwireTriggered as e:
+        raise InvalidOutput(f"the output guardrail {e.guardrail_result.guardrail.get_name()} refused the output: {e.guardrail_result.output.output_info}") from e
     except openai.RateLimitError as e:
         raise ModelUnavailable(f"rate limited after retries: {e}") from e
     except openai.APIConnectionError as e:

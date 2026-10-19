@@ -60,7 +60,9 @@ def test_full_protocol_ends_in_a_submission(tmp_path: Path, fake_openai, fake_ga
     assert record["agent"] == "quant" and record["model"] == "gpt-6-luna" and len(record["skills_hash"]) == 64
     assert record["campaign"] == "test"
     routes = fake_gateway.routes_called()
-    assert routes == ["schema", "resolve_symbols", "check", "plan_run", "query_run", "query_run", "plan_check", "plan_run", "plan_report", "plan_check", "submit"]
+    # The first turn's three calls run in parallel, in no fixed order.
+    assert sorted(routes[:2]) == ["resolve_symbols", "schema"]
+    assert routes[2:] == ["check", "plan_run", "query_run", "query_run", "plan_check", "plan_run", "plan_report", "plan_check", "submit"]
     submitted = fake_gateway.submitted
     assert submitted["program_text"] == PROGRAM and submitted["forward_plan_text"] == FORWARD_PLAN
     assert submitted["insample"]["metrics"]["columns"][0] == "step"

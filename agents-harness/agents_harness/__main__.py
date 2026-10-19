@@ -15,7 +15,7 @@ from .budget import BudgetExceeded, Meter, load_rates, rate_for
 from .gateway import Gateway
 from .job import JobError, job_dir_from_env, load_inputs
 from .output import write_cost, write_notes, write_records, write_status
-from .runner import ModelUnavailable, make_client
+from .runner import InvalidOutput, ModelUnavailable, make_client
 from .skills import DefinitionError, SkillError, skills_hash
 from .stages import STAGES
 from .tools import Context
@@ -58,6 +58,9 @@ def main(argv: list[str] | None = None) -> int:
         write_records(out_dir, [])
         write_status(out_dir, "failed", "budget", False, str(e))
         code = EXIT_BUDGET
+    except InvalidOutput as e:
+        write_records(out_dir, [])
+        write_status(out_dir, "failed", "invalid_output", False, str(e))
     except ModelUnavailable as e:
         write_records(out_dir, [])
         write_status(out_dir, "failed", "model_unavailable", True, str(e))
