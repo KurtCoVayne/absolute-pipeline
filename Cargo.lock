@@ -3,6 +3,20 @@
 version = 4
 
 [[package]]
+name = "abt-gateway"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
+]
+
+[[package]]
+name = "abt-report"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
+]
+
+[[package]]
 name = "abt-wire"
 version = "0.2.0"
 source = "git+https://github.com/KurtCoVayne/absolute-backtest?rev=a4128ca#a4128ca464f22bf64e74bfb3ceac040b4fe9e58f"
@@ -14,6 +28,13 @@ dependencies = [
  "planus-translation",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "agents-orchestrator"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
 ]
 
 [[package]]
@@ -859,6 +880,34 @@ checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
+]
+
+[[package]]
+name = "ingest-core"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
+]
+
+[[package]]
+name = "ingest-extract"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
+]
+
+[[package]]
+name = "ingest-fetch"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
+]
+
+[[package]]
+name = "ingest-x"
+version = "0.1.0"
+dependencies = [
+ "pipeline-wire",
 ]
 
 [[package]]
