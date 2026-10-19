@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from typing import Any
 
 import openai
@@ -33,6 +34,7 @@ from .skills import Definition, Skill, blake3_hex
 from .tools import Context, ProtocolEnd, build_tools
 
 OPENAI_BASE_URL_DEFAULT = "http://10.200.0.1:8080/openai/v1"
+_ENVELOPE_TAGS = re.compile(r'<document id="[0-9a-f]*" r="[^"]*" fixed_at="[^"]*" source="[^"]*" author="[^"]*" untrusted>|</document>')
 
 
 class ModelUnavailable(Exception):
@@ -59,7 +61,8 @@ def render_instructions(definition: Definition, skills: list[Skill], inputs: Inp
         f"# You are `{definition.name}`, the `{definition.stage}` stage of the pipeline.",
         "",
         f"Job `{job.id}`. Model `{job.model}` (knowledge cutoff {definition.model.knowledge_cutoff}).",
-        f"Information horizon H = `{h_text}` (written verbatim wherever a plan needs it); nothing received after H is readable.",
+        f"Information horizon H = `{h_text}`, written verbatim wherever a plan needs it. H bounds the data: the gateway serves nothing the store received after H.",
+        "The input documents below are yours to read: each was fixed (`fixed_at`) at or before H by construction (Definition PL-4.1); its receipt time `r` is when the pipeline stored it and may be later than H, which does not matter.",
         f"Lineage: `{job.lineage or '(empty: the first program opens it)'}`.",
         f"Capabilities granted by the token: {caps}. Tools exist for these and for nothing else.",
         f"Budget: {job.budget.tokens_in:,} tokens in, {job.budget.tokens_out:,} out, {job.budget.tool_calls} tool calls, {job.budget.wall_s:g} s, {job.budget.money_usd:g} USD"
@@ -127,7 +130,8 @@ async def content_is_data_guardrail(context: RunContextWrapper[Context], agent: 
         if hits:
             found[doc_id] = hits
     items = input_items if isinstance(input_items, list) else [input_items]
-    loose = scan("\n".join(_text_of(i) for i in items))
+    # The harness's own envelopes are not imitations: strip their tags before scanning what is left.
+    loose = scan(_ENVELOPE_TAGS.sub("", "\n".join(_text_of(i) for i in items)))
     if loose and not found:
         found["(input)"] = loose
     for doc_id, hits in found.items():

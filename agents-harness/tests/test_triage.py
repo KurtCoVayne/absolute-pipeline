@@ -40,6 +40,9 @@ def test_triage_writes_a_valid_record(tmp_path: Path, fake_openai, fake_gateway,
     assert sorted(req.tool_names) == ["note", "read_document"]
     assert req.body["text"]["format"]["type"] == "json_schema"
     assert fake_gateway.requests == []
+    # A clean document inside the harness's own envelope is not an injection.
+    assert built.notes() == ""
+    assert "yours to read" in req.instructions
 
 
 def test_triage_tools_are_only_the_granted_ones(tmp_path: Path, fake_openai, fake_gateway, run_harness) -> None:
