@@ -25,4 +25,5 @@ for f in sorted((src / "ohlcv-1m" / f"{root}.FUT").glob("*.parquet")):
     n_in += t.num_rows
     n_out += k.num_rows
     pq.write_table(k, dst / f.name, compression="zstd")
+(out / "ohlcv-1m" / f"{root}.FUT.done").write_text(f"{n_in} {n_out}\n")
 print(f"{root}: {n_in} rows in, {n_out} kept ({n_out / max(n_in, 1):.1%})")

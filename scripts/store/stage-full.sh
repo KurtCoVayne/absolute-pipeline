@@ -43,7 +43,10 @@ dbn_views() { # dataset dir, views dir
     [ -f "$V/definition/$r.parquet" ] || { echo "$r: no definition" | tee -a "$SUM"; continue; }
     mkdir -p "$VIEWS/$r/definition" "$VIEWS/$r/ohlcv-1m"
     ln -sfn "$V/definition/$r.parquet" "$VIEWS/$r/definition/$r.parquet"
-    ln -sfn "$V/ohlcv-1m/$r.FUT" "$VIEWS/$r/ohlcv-1m/$r.FUT"
+    local bars="$V/ohlcv-1m/$r.FUT" filt="/srv/absolute/full/filtered/$(basename "$V")/ohlcv-1m/$r.FUT"
+    # A root prefiltered to its defined (outright) contracts reads the filtered day files.
+    [ -d "$filt" ] && [ -f "$filt.done" ] && bars="$filt"
+    ln -sfn "$bars" "$VIEWS/$r/ohlcv-1m/$r.FUT"
     echo "$r"
   done
 }
