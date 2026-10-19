@@ -1,0 +1,15 @@
+[package]
+name = "pipeline-run"
+description = "The MVP's single process (iteration 1, the cut of Oct 19): the seed posts fetched by id through xAI, triage, analyst and quant run as harness subprocesses over a file-backed queue of JSON records, and one static page of the submissions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+pipeline-wire.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+toml.workspace = true
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "blocking"] }
+blake3.workspace = true

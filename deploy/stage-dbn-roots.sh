@@ -4,8 +4,13 @@
 # roots took 31.6 GB and was killed; per root the peak is one root's bars).
 # Each root gets a view directory with its definition and its bars; the
 # roots go in by ascending size so a failure is late and alone; a root's
-# exit code, wall time and peak RSS are logged.
+# exit code, wall time and peak RSS are logged. EATMYDATA=1 (PL-D10) runs the
+# historical bulk load with fsync a no-op and syncs once at the end: the
+# ingest is fsync-bound on EBS (about 93 journal commits a second), and a
+# crash mid-load is recovered by staging again from the landed objects
+# (ST-7.5: S1 to S4 are deterministic). Serving and appends keep fsync.
 set -uo pipefail
+PRE=(); [ "${EATMYDATA:-0}" = "1" ] && PRE=(eatmydata)
 B=${B:-/srv/absolute/absolute-backtest/target/release}
 V=${V:-/srv/absolute/data/vendor/dbn/GLBX.MDP3}
 STORE=${STORE:-/srv/absolute/store}
@@ -19,10 +24,11 @@ for r in $roots; do
   mkdir -p "$VIEWS/$r/definition" "$VIEWS/$r/ohlcv-1m"
   ln -sfn "$V/definition/$r.parquet" "$VIEWS/$r/definition/$r.parquet"
   ln -sfn "$V/ohlcv-1m/$r.FUT" "$VIEWS/$r/ohlcv-1m/$r.FUT"
-  /usr/bin/time -v "$B/abt-data" ingest --store "$STORE" --adapter databento --from "$VIEWS/$r" --class future --undefined drop \
+  /usr/bin/time -v "${PRE[@]}" "$B/abt-data" ingest --store "$STORE" --adapter databento --from "$VIEWS/$r" --class future --undefined drop \
     --report "$LOGS/$r-report.json" --measure > "$LOGS/$r-ingest.log" 2> "$LOGS/$r-time.log"
   code=$?
   echo "$r exit $code wall $(grep Elapsed "$LOGS/$r-time.log" | awk '{print $NF}') rss_kb $(grep 'Maximum resident' "$LOGS/$r-time.log" | awk '{print $NF}') $(date -u +%FT%TZ)" | tee -a "$LOGS/summary.log"
 done
+sync
 "$B/abt-data" stats --store "$STORE" --measure > "$LOGS/../stats-measure.log" 2>&1
 du -sh "$STORE"; echo "== dbn roots done $(date -u +%FT%TZ)"
