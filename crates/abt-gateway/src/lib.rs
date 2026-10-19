@@ -15,6 +15,8 @@
 // detail), as the backtester's `RunError` does; the size is the point.
 #![allow(clippy::result_large_err)]
 
+pub mod api;
+pub mod forward;
 pub mod horizon;
 pub mod jobs;
 pub mod layers;
