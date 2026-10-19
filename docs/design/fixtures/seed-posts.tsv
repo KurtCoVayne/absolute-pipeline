@@ -1,8 +1,9 @@
-# The seed posts (the owner, Oct 19, 2026): the 50 posts the team shared, the first campaign and GP-5's corpus (PL-8.3).
+# The seed posts (the owner, Oct 19, 2026): the 50 posts the team shared, the first campaign and GP-5's corpus (PL-8.3), and @NickTimiraos's post of Aug 19, 2026, which the owner added that evening.
 # created_utc is decoded from the post id (X's snowflake: (id >> 22) + 1288834974657 ms) and is the post's fixity time (PL-4.2).
 created_utc	handle	post_id	url
 2025-05-14T18:06:27Z	onlybreakouts	1922715145840603213	https://x.com/onlybreakouts/status/1922715145840603213
 2026-05-15T08:40:10Z	zenomtrader	2055206594644746264	https://x.com/zenomtrader/status/2055206594644746264
+2026-08-19T13:11:43Z	NickTimiraos	2090064165956461010	https://x.com/NickTimiraos/status/2090064165956461010
 2026-09-16T22:48:23Z	jarrodwatts	2100356151468585346	https://x.com/jarrodwatts/status/2100356151468585346
 2026-09-17T09:54:50Z	abolbuild	2100523868913807410	https://x.com/abolbuild/status/2100523868913807410
 2026-09-18T11:46:08Z	kovainvest	2100914266010222617	https://x.com/kovainvest/status/2100914266010222617
