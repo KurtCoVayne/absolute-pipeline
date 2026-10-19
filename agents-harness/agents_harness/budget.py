@@ -79,6 +79,15 @@ class Meter:
         return max(0.0, self.budget.wall_s - self.wall_s)
 
     @property
+    def tokens_in_weighted(self) -> float:
+        """The input the cap on `tokens_in` counts: uncached tokens at full
+        weight, cached ones at a tenth (their price). The skills are resent on
+        every turn and mostly cached; counting them in full failed jobs as
+        `budget` that had spent a few cents (PL-D14). The money cap binds."""
+        uncached = max(0, self.tokens_in - self.tokens_cached)
+        return uncached + self.tokens_cached / 10
+
+    @property
     def money_usd(self) -> float:
         uncached = max(0, self.tokens_in - self.tokens_cached)
         return (uncached * self.rate.input + self.tokens_cached * self.rate.cached + self.tokens_out * self.rate.output) / 1_000_000
@@ -96,8 +105,8 @@ class Meter:
 
     def check(self) -> None:
         b = self.budget
-        if self.tokens_in > b.tokens_in:
-            raise BudgetExceeded("tokens_in", self.tokens_in, b.tokens_in)
+        if self.tokens_in_weighted > b.tokens_in:
+            raise BudgetExceeded("tokens_in", self.tokens_in_weighted, b.tokens_in)
         if self.tokens_out > b.tokens_out:
             raise BudgetExceeded("tokens_out", self.tokens_out, b.tokens_out)
         if self.tool_calls > b.tool_calls:
@@ -113,6 +122,7 @@ class Meter:
             "tokens_in": self.tokens_in,
             "tokens_out": self.tokens_out,
             "tokens_cached": self.tokens_cached,
+            "tokens_in_weighted": round(self.tokens_in_weighted),
             "tool_calls": self.tool_calls,
             "wall_s": round(self.wall_s, 3),
             "money_usd": round(self.money_usd, 6),

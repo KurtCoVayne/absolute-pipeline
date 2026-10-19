@@ -19,7 +19,14 @@ from .job import Inputs
 from .local import LocalAbt
 from .skills import blake3_hex
 
-MAX_TOOL_OUTPUT = 60_000
+# A tool answer is resent on every later turn: keep it small (the full
+# answers stay on disk for the site). Tables show TABLE_ROWS rows, long texts
+# TEXT_CHARS characters, lists LIST_ITEMS items; the whole answer at most
+# MAX_TOOL_OUTPUT characters.
+MAX_TOOL_OUTPUT = 16_000
+TABLE_ROWS = 50
+TEXT_CHARS = 6_000
+LIST_ITEMS = 50
 
 
 class ProtocolEnd(Exception):
@@ -96,8 +103,42 @@ class QueryForm(BaseModel):
     columns: list[str] = Field(description="the columns wanted; empty for all")
 
 
+def compact(value: Any) -> Any:
+    """A tool answer as the model needs it: a table's first TABLE_ROWS rows
+    with the total, a long text's head with its length, a long list's head
+    with its count, repeated diagnostics once with their count."""
+    if isinstance(value, dict):
+        if isinstance(value.get("rows"), list) and isinstance(value.get("columns"), list):
+            rows = value["rows"]
+            out = {k: compact(v) for k, v in value.items() if k != "rows"}
+            out["rows"] = rows[:TABLE_ROWS]
+            if len(rows) > TABLE_ROWS:
+                out["rows_total"] = len(rows)
+                out["truncated"] = True
+                out["hint"] = f"{len(rows) - TABLE_ROWS} more rows: narrow the window or the identity"
+            return out
+        return {k: compact(v) for k, v in value.items() if k not in ("normal_form",)}
+    if isinstance(value, list):
+        if value and all(isinstance(d, dict) and "message" in d for d in value):
+            seen: dict[tuple[Any, str], dict[str, Any]] = {}
+            for d in value:
+                key = (d.get("code"), str(d.get("message", ""))[:160])
+                if key in seen:
+                    seen[key]["count"] = seen[key].get("count", 1) + 1
+                else:
+                    seen[key] = dict(d)
+            value = list(seen.values())
+        head = [compact(v) for v in value[:LIST_ITEMS]]
+        if len(value) > LIST_ITEMS:
+            head.append(f"… {len(value) - LIST_ITEMS} more")
+        return head
+    if isinstance(value, str) and len(value) > TEXT_CHARS:
+        return value[:TEXT_CHARS] + f"… [{len(value) - TEXT_CHARS} more characters]"
+    return value
+
+
 def _dumps(value: Any) -> str:
-    text = json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
+    text = json.dumps(compact(value), ensure_ascii=False, separators=(",", ":"), default=str)
     if len(text) > MAX_TOOL_OUTPUT:
         return text[:MAX_TOOL_OUTPUT] + f'… [truncated: {len(text) - MAX_TOOL_OUTPUT} more characters; narrow the request]"}}'
     return text

@@ -30,7 +30,7 @@ from typing import Any
 from .gateway import GatewayError
 
 MAX_ROWS = 500
-MAX_TEXT = 40_000
+MAX_TEXT = 8_000
 WINDOW_YEARS = 3
 _WINDOW = re.compile(r"^(\s*window\s+)(\S+)(\s*\.\.\s*)(\S+)", re.M)
 _HOLDOUT = re.compile(r"^\s*holdout\s+(\S+)", re.M)
@@ -80,6 +80,30 @@ def _num(c: str) -> Any:
         return float(c) if re.fullmatch(r"-?\d+(\.\d+)?([eE][-+]?\d+)?", c) else c
     except ValueError:
         return c
+
+
+# The metric rows the model reads of an outcome (the full JSON stays on disk).
+_RETURNS = ("n", "total_return", "cagr", "volatility", "sharpe", "max_drawdown", "max_drawdown_duration")
+_TRADING = ("decisions", "fills", "turnover", "dropped")
+
+
+def brief_outcome(o: dict[str, Any]) -> dict[str, Any]:
+    """An outcome's step, point and the metrics that matter, rounded."""
+
+    def pick(d: Any, keys: tuple[str, ...] | None) -> dict[str, Any]:
+        if not isinstance(d, dict):
+            return {}
+        items = d.items() if keys is None else ((k, d.get(k)) for k in keys)
+        return {k: (round(v, 5) if isinstance(v, float) else v) for k, v in items if isinstance(v, (int, float)) and not isinstance(v, bool)}
+
+    return {
+        "step": o.get("step"),
+        "point": o.get("point"),
+        "run_id": o.get("run_id"),
+        "returns": pick(o.get("returns"), _RETURNS),
+        "trading": pick(o.get("trading"), _TRADING),
+        "trades": pick(o.get("trades"), None),
+    }
 
 
 class LocalAbt:
@@ -144,26 +168,34 @@ class LocalAbt:
     # ------------------------------------------------------------------ the catalog
 
     def _r_catalog(self, body: dict[str, Any]) -> Any:
-        cls = str(body.get("class") or "")
-        args = ["data", "catalog", "--store", self.store] + (["--class", cls] if cls else [])
-        r = self._abt(args, timeout=300)
-        text = (r.stdout or r.stderr)[:MAX_TEXT]
+        """The roots the store holds and the class's relations: what a program
+        can name. Not the catalog's whole text (tens of kilobytes resent on
+        every later turn)."""
+        cls = str(body.get("class") or "future")
         pred = str(body.get("predicate") or "").strip()
-        if pred:
-            value = pred.split("=", 1)[-1].strip().strip("\"'")
-            text = "\n".join(ln for ln in text.splitlines() if value.lower() in ln.lower()) or f"(no line of the catalog mentions {value})"
-        extra: dict[str, Any] = {}
-        if cls in ("", "future") and self.roots:
-            roots = self.roots
-            if pred:
-                value = pred.split("=", 1)[-1].strip().strip("\"'").upper()
-                roots = [r for r in self.roots if r == value] or self.roots
-            extra["futures_roots_staged"] = [self._root_entry(r) for r in roots]
-        return {
-            "text": text,
-            **extra,
-            "note": "futures: back-adjusted continuous series per root at @1m (daily views by `@session` or a sessions calendar); equities: Norgate S&P 500 members since 2014 at @1d",
-        }
+        value = pred.split("=", 1)[-1].strip().strip("\"'").upper() if pred else ""
+        out: dict[str, Any] = {"class": cls, "relations": self._signatures(cls)}
+        if cls == "future":
+            roots = [r for r in self.roots if not value or r == value]
+            out["roots"] = [self._root_entry(r) for r in roots] if value else [{"root": r, "abt_id": self._root_ids().get(r)} for r in roots]
+            if value and not roots:
+                out["note"] = f"{value} is not a staged root; staged: {','.join(self.roots)}"
+            out["bars"] = "back-adjusted continuous series per root at @1m; daily views by `@session` on a `sessions` calendar"
+        elif cls == "equity":
+            out["universe"] = 'Norgate: every S&P 500 member since 2014-01-01, as of each day (member(A, T, "SPX")), daily bars'
+        return out
+
+    def _signatures(self, cls: str) -> list[str]:
+        """The class file's relation lines (`close(A: Future, @T, P: Price<USD>)`, …)."""
+        sigs: list[str] = []
+        for p in self.lib:
+            if Path(p).name != f"{cls}.dsl":
+                continue
+            for ln in Path(p).read_text(encoding="utf-8").splitlines():
+                t = ln.strip()
+                if re.match(r"^[a-z_]+\(", t) or t.startswith(("lists ", "reasons ", "base ", "unit ")):
+                    sigs.append(t.split("#", 1)[0].strip())
+        return sigs
 
     def _root_ids(self) -> dict[str, int]:
         """The staged roots' data-layer ids: the `continuous` root ids, named by the `ticker` registry
@@ -194,8 +226,8 @@ class LocalAbt:
 
     def _r_schema(self, body: dict[str, Any]) -> Any:
         cls = str(body.get("class") or "future")
-        texts = [Path(p).read_text(encoding="utf-8") for p in self.lib if Path(p).name == f"{cls}.dsl"]
-        return {"text": "\n".join(texts)[:MAX_TEXT] or f"no catalog file for class {cls}", "futures_roots_staged": self.roots if cls == "future" else None}
+        sigs = self._signatures(cls)
+        return {"class": cls, "relations": sigs or [f"no catalog file for class {cls}"], "futures_roots_staged": self.roots if cls == "future" else None}
 
     def _r_resolve_symbols(self, body: dict[str, Any]) -> Any:
         out = []
@@ -247,7 +279,7 @@ class LocalAbt:
             except ValueError:
                 pass
         parts.append(f"r <= {_iso(r_max)}")
-        table = self._query_store(" ".join(parts))
+        table = self._query_store(" ".join(parts), int(body.get("limit") or 50))
         table["query"] = " ".join(parts)
         return table
 
@@ -397,11 +429,11 @@ class LocalAbt:
             "program_hash": run.get("program_hash"),
             "lineage": run.get("lineage"),
             "runs": [{k: v for k, v in x.items() if k in ("step", "run_id", "status", "point", "decisions")} for x in runs],
-            "outcomes": [{"step": o.get("step"), "point": o.get("point"), "returns": o.get("returns"), "trading": o.get("trading")} for o in run.get("outcomes", [])][:12],
+            "outcomes": [brief_outcome(o) for o in run.get("outcomes", [])][:12],
             "grids": run.get("grids"),
             "dsr": run.get("dsr"),
             "trial_kinds": run.get("trial_kinds"),
-            "reveal": [{"step": o.get("step"), "returns": o.get("returns"), "trading": o.get("trading")} for o in (reveal or {}).get("outcomes", [])] if isinstance(reveal, dict) else reveal,
+            "reveal": [brief_outcome(o) for o in (reveal or {}).get("outcomes", [])] if isinstance(reveal, dict) else reveal,
             "warnings": [w.get("message", "")[:300] for w in run.get("warnings", [])][:8],
         }
         return {"plan_hash": plan_hash, "runs": brief["runs"], "report": brief}
@@ -454,12 +486,12 @@ class LocalAbt:
         run = rec["report"]["plan_run"]
         tables = rec["report"]["tables"]
         return {
-            "summary": [{"step": o.get("step"), "point": o.get("point"), "returns": o.get("returns"), "trading": o.get("trading")} for o in run.get("outcomes", [])],
+            "summary": [brief_outcome(o) for o in run.get("outcomes", [])],
             "grids": run.get("grids"),
             "dsr": run.get("dsr"),
             "trials": {"count": run.get("trials"), "kinds": run.get("trial_kinds")},
             "claims": run.get("claims"),
-            "reveal": rec["report"].get("reveal") and [{"step": o.get("step"), "returns": o.get("returns"), "trading": o.get("trading")} for o in rec["report"]["reveal"].get("outcomes", [])],
+            "reveal": rec["report"].get("reveal") and [brief_outcome(o) for o in rec["report"]["reveal"].get("outcomes", [])],
             "contribution": {k: v for k, v in (tables.get("contribution") or {}).items() if k != "text"},
             "warnings": [w.get("message", "")[:300] for w in run.get("warnings", [])][:12],
         }

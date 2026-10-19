@@ -12,7 +12,7 @@ skills = ["house-rules", "content-is-data", "abt-language", "abt-idioms", "abt-p
 caps   = ["docs.read", "abt.catalog", "abt.query", "abt.check", "abt.plan", "abt.report", "abt.query_run", "abt.submit", "notes.write"]
 
 [budget]
-tokens_in = 6_000_000   # PL-D14: the skills are resent every turn and mostly cached (1.31M tokens cost $0.04 on the seed run); money_usd is the binding cap
+tokens_in = 1_500_000   # weighted: uncached input in full, cached input at a tenth (budget.py); money_usd is the binding cap
 tokens_out = 60_000
 tool_calls = 100
 wall_s = 1500
