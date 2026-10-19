@@ -561,6 +561,19 @@ fn step(cfg: &RunCfg, defs: &BTreeMap<&str, Def>, shared: &Shared, item: Work) -
     let out = dir.join("out");
     let status_path = out.join("status.json");
     let mut cost = 0.0;
+    // A job that failed on the model's rate limit waits and runs again
+    // (PL-10: jobs wait in the queue, never fail for a 429), at most three
+    // times; the earlier status is kept beside it.
+    let st_prev: Value = fs::read(&status_path).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or(Value::Null);
+    if st_prev["reason"] == "model_unavailable" {
+        let attempts_path = dir.join("attempts");
+        let attempts: u32 = fs::read_to_string(&attempts_path).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1);
+        if attempts < 3 {
+            fs::rename(&status_path, out.join(format!("status.{}.json", attempts))).map_err(|e| e.to_string())?;
+            fs::write(&attempts_path, (attempts + 1).to_string()).map_err(|e| e.to_string())?;
+            std::thread::sleep(Duration::from_secs(30 * attempts as u64));
+        }
+    }
     if !status_path.exists() {
         // The OpenAI guard: no job starts once the spend reaches the cap
         // less the dearest job's own cap.
