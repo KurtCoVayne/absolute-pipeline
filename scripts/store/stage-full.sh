@@ -10,7 +10,7 @@
 set -uo pipefail
 B=${B:-/srv/absolute/abt-full-target/release/abt-data}
 STORE=${STORE:-/srv/absolute/store-full}
-LOGS=/srv/absolute/logs/full; mkdir -p "$LOGS" "$STORE"
+LOGS=${LOGS:-/srv/absolute/logs/full}; mkdir -p "$LOGS" "$STORE"
 SUM="$LOGS/summary.log"; touch "$SUM"
 L=/srv/absolute/data/vendor/ndlake
 CAP=${CAP:-20G}
@@ -47,8 +47,14 @@ dbn_views() { # dataset dir, views dir
     echo "$r"
   done
 }
+order() { # the roots of `dbn_views`, the ones named in FIRST first
+  local all; all=$(cat)
+  if [ -n "${ONLY:-}" ]; then for r in $ONLY; do echo "$all" | grep -qx "$r" && echo "$r"; done; return; fi
+  for r in ${FIRST:-}; do echo "$all" | grep -qx "$r" && echo "$r"; done
+  for r in $all; do case " ${FIRST:-} " in *" $r "*) ;; *) echo "$r";; esac; done
+}
 dbn() {
-  for r in $(dbn_views /srv/absolute/data/vendor/dbn/GLBX.MDP3 /srv/absolute/full/views-dbn); do
+  for r in $(dbn_views /srv/absolute/data/vendor/dbn/GLBX.MDP3 /srv/absolute/full/views-dbn | order); do
     step "dbn-$r" --adapter databento --from "/srv/absolute/full/views-dbn/$r" --class future --undefined drop --report "$LOGS/dbn-$r-report.json"
   done
 }
