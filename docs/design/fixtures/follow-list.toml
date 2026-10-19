@@ -1,0 +1,226 @@
+# The seed follow list (the owner, Oct 19, 2026): the 37 accounts the team shared between Sep 17 and Oct 17, 2026.
+# Loaded by `ingest follow import docs/design/fixtures/follow-list.toml`; each entry becomes a row of the `control` topic (PL-5.2).
+# tier 1: shared twice or more by the team; tier 2: shared once. `shared` is the count of shares, kept as the tier's evidence.
+# Tiers change by `ingest follow tier @handle N`; the follower never adds an account by itself.
+
+[[account]]
+handle = "peterlbrandt"
+tier = 1
+shared = 6
+posts_shared = 5
+
+[[account]]
+handle = "techcharts"
+tier = 1
+shared = 5
+posts_shared = 4
+
+[[account]]
+handle = "zenomtrader"
+tier = 1
+shared = 5
+posts_shared = 3
+
+[[account]]
+handle = "cfromhertz"
+tier = 1
+shared = 2
+posts_shared = 1
+
+[[account]]
+handle = "kieran__duff"
+tier = 1
+shared = 2
+posts_shared = 1
+
+[[account]]
+handle = "kovainvest"
+tier = 1
+shared = 2
+posts_shared = 2
+
+[[account]]
+handle = "nishantkumar07"
+tier = 1
+shared = 2
+posts_shared = 2
+
+[[account]]
+handle = "nodal_capital"
+tier = 1
+shared = 2
+posts_shared = 2
+
+[[account]]
+handle = "quantifiedstrat"
+tier = 1
+shared = 2
+posts_shared = 2
+
+[[account]]
+handle = "realpristinecap"
+tier = 1
+shared = 2
+posts_shared = 1
+
+[[account]]
+handle = "ripster47"
+tier = 1
+shared = 2
+posts_shared = 1
+
+[[account]]
+handle = "SystematicPeter"
+tier = 1
+shared = 2
+posts_shared = 1
+
+[[account]]
+handle = "abolbuild"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "antpalkin"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "Barchart"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "buildalpha"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "jarrodwatts"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "lindaraschke"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "mcclellanosc"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "michaelztrading"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "milesdeutscher"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "nodal_infra"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "onlybreakouts"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "panicsellweekly"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "quantscience_"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "randgroup"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "s2g9dobdrowbjhd"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "saxena_puru"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "signal_sigma"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "steff147"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "systemtheoryhq"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "techelyra"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "thelonginvest"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "tommy_jepsen"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "traderlion"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "virattt"
+tier = 2
+shared = 1
+posts_shared = 1
+
+[[account]]
+handle = "wliang"
+tier = 2
+shared = 1
+posts_shared = 1

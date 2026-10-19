@@ -1,0 +1,7 @@
+target/
+work/
+.env
+*.env
+secrets/
+__pycache__/
+.venv/
