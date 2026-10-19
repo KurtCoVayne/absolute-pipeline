@@ -1,6 +1,6 @@
 ---
 name: write-strategy
-version: 1
+version: 2
 ---
 # Write the strategy: the protocol as a loop
 
@@ -16,7 +16,8 @@ Read `hypothesis.json`'s content in your input: the statement, the universe, the
 
 - `schema("future")` (or `"equity"`): the primitives, the lists and the labels the store holds. `catalog("future")`: the roots and their spans. `resolve_symbols([…])` for every symbol the author named; an ETF or stock maps to its future when one exists (QQQ → NQ, SPY → ES).
 - Apply the table of house rules §2. Intraday rules need minute bars for the roots in question (`need bars @1m`): check `catalog` says the base is `@1m` for them. Implied volatility, breadth, fundamentals, earnings dates: not available.
-- When the data cannot test the idea: `note` the reason and end the job with the outcome `not_testable` and the reason in `detail`. When the store lacks the instruments: `no_data`. Do not approximate silently; a labelled daily approximation is admissible only when the hypothesis is daily in substance.
+- **The hypothesis is your specification.** An assumption it labels (`not stated (assume …)`) is part of the rule you test, not a reason to stop: translate it as written and name it in the rationale's first part (house rules §8). Where a rule is vague but the hypothesis gives no assumption, take the most neutral reading that a reviewer would accept (entry at the next open on the house preset, exit after the stated horizon or after 20 bars, no stop unless stated), label it as an assumption in the notes and the rationale, and test it; a negative result is a result.
+- `not_testable` is for what the data cannot hold (implied volatility, positioning data, fundamentals, a single stock with no matching future, intraday logic on a root without minute bars) or a signal whose very input is missing from the store, never for a gap an assumption fills. When the data cannot test the idea: `note` the reason and end the job with the outcome `not_testable` and the reason in `detail`. When the store lacks the instruments: `no_data`. Do not approximate silently; a labelled daily approximation is admissible only when the hypothesis is daily in substance.
 
 ## Step 2 · Translate
 
