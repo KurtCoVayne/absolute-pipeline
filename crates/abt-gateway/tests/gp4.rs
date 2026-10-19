@@ -37,8 +37,8 @@ fn fixture() -> &'static Fixture {
     static F: OnceLock<Fixture> = OnceLock::new();
     F.get_or_init(|| {
         let market = support::market(260, 150, 21);
-        let src = momentum("idea");
-        let prog = program(&src, "idea");
+        let src = momentum("idea_moc");
+        let prog = program(&src, "idea_moc");
         let world = World::new(&market.ds, &prog, 1, Default::default());
         let addr = serve_http(world.gateway.clone());
         let token = world.agent_token("gp4", market.h);
@@ -218,7 +218,7 @@ fn the_guards_refuse_with_their_codes() {
     let f = fixture();
     let (h, first) = (f.market.h, f.market.first);
     let token = f.world.agent_token("gp4-guards", h);
-    let plan = development_plan("idea", h, first);
+    let plan = development_plan("idea_moc", h, first);
     let refused = |plan: String, programs: Value, code: &str| {
         for route in ["plan_check", "plan_run"] {
             let (status, r) = post(f.addr, route, Some(&token), &json!({ "plan": plan, "programs": programs }));
@@ -228,30 +228,34 @@ fn the_guards_refuse_with_their_codes() {
     };
     // Without the required hold-out: none, a block hold-out, a window
     // ending elsewhere, `after` another time.
-    refused(plan.replace("holdout    trailing:1y", "holdout    none"), programs("idea", &f.src), "holdout");
-    refused(plan.replace("holdout    trailing:1y", "holdout    blocks:2:2mo"), programs("idea", &f.src), "holdout");
-    refused(plan.replace(&abt_gateway::plan::render_h(h), "2022-06-01"), programs("idea", &f.src), "holdout");
-    refused(forward_plan("idea", h).replace(&abt_gateway::plan::render_h(h), "2022-06-01"), programs("idea", &f.src), "holdout");
-    refused(plan.replace("money 0", "money 1"), programs("idea", &f.src), "budget");
+    refused(plan.replace("holdout    trailing:1y", "holdout    none"), programs("idea_moc", &f.src), "holdout");
+    refused(plan.replace("holdout    trailing:1y", "holdout    blocks:2:2mo"), programs("idea_moc", &f.src), "holdout");
+    refused(plan.replace(&abt_gateway::plan::render_h(h), "2022-06-01"), programs("idea_moc", &f.src), "holdout");
+    refused(
+        forward_plan("idea_moc", h).replace(&abt_gateway::plan::render_h(h), "2022-06-01"),
+        programs("idea_moc", &f.src),
+        "holdout",
+    );
+    refused(plan.replace("money 0", "money 1"), programs("idea_moc", &f.src), "budget");
     // Beyond the grid budget, then beyond the plan-execution budget.
     let grid: Vec<String> = (1..=26).map(|i| i.to_string()).collect();
-    refused(plan.replace("n = 1, 2", &format!("n = {}", grid.join(", "))), programs("idea", &f.src), "grid");
+    refused(plan.replace("n = 1, 2", &format!("n = {}", grid.join(", "))), programs("idea_moc", &f.src), "grid");
     let small = f.world.token(&abt_gateway::Grant {
         plan_runs: 1,
         ..f.world.grant("gp4-one-run", h, AGENT_CAPS)
     });
-    let body = json!({ "plan": plan.replace("grid       { n = 1, 2 }", "grid       { n = 2 }"), "programs": programs("idea", &f.src) });
+    let body = json!({ "plan": plan.replace("grid       { n = 1, 2 }", "grid       { n = 2 }"), "programs": programs("idea_moc", &f.src) });
     let (status, r) = post(f.addr, "plan_run", Some(&small), &body);
     assert_eq!(status, 200, "{}", r);
     let (status, r) = post(f.addr, "plan_run", Some(&small), &body);
     assert_eq!(status, 409, "{}", r);
     assert_eq!(r["error"]["code"], "plan_runs");
     // Off the house presets.
-    refused(plan.clone(), programs("idea", &f.src.replace("execution equities_house", "execution equity_default")), "preset");
-    refused(plan.clone(), programs("idea", &f.src.replace("execution equities_house", "execution { price close }")), "preset");
+    refused(plan.clone(), programs("idea_moc", &f.src.replace("execution equities_house", "execution equity_default")), "preset");
+    refused(plan.clone(), programs("idea_moc", &f.src.replace("execution equities_house", "execution { price close }")), "preset");
     // A program outside the lineage: none of the programs sent is the
     // plan's; and, with a lineage in the token, a program unlike its members.
-    refused(plan.replace("idea.dsl", "elsewhere.dsl"), programs("idea", &f.src), "lineage");
+    refused(plan.replace("idea_moc.dsl", "elsewhere.dsl"), programs("idea_moc", &f.src), "lineage");
     let other = f
         .src
         .replace("strategy idea", "strategy unrelated")
@@ -265,21 +269,21 @@ fn the_guards_refuse_with_their_codes() {
         f.addr,
         "plan_check",
         Some(&foreign),
-        &json!({ "plan": plan.replace("idea.dsl", "unrelated.dsl"), "programs": programs("unrelated", &other) }),
+        &json!({ "plan": plan.replace("idea_moc.dsl", "unrelated.dsl"), "programs": programs("unrelated", &other) }),
     );
     assert_eq!(status, 409, "{}", r);
     assert_eq!(r["error"]["code"], "lineage");
     // plan_reveal: no route; a forged request to the query layer's route
     // name is 404, with an agent's token or none.
     assert_eq!(
-        post(f.addr, "plan_reveal", Some(&token), &json!({ "plan": plan, "programs": programs("idea", &f.src), "step": "oos" })).0,
+        post(f.addr, "plan_reveal", Some(&token), &json!({ "plan": plan, "programs": programs("idea_moc", &f.src), "step": "oos" })).0,
         404
     );
     assert_eq!(post(f.addr, "plan_reveal", None, &json!({})).0, 404);
     assert_eq!(post(f.addr, "reveal", Some(&token), &json!({})).0, 404);
     assert!(!abt_gateway::api::ROUTES.contains(&"plan_reveal"));
     // submit: hashes of a plan the job did not run; then a second submit.
-    let (status, r) = post(f.addr, "plan_run", Some(&token), &json!({ "plan": plan, "programs": programs("idea", &f.src) }));
+    let (status, r) = post(f.addr, "plan_run", Some(&token), &json!({ "plan": plan, "programs": programs("idea_moc", &f.src) }));
     assert_eq!(status, 200, "{}", r);
     let (plan_hash, program_hash) = (r["result"]["plan_hash"].as_str().unwrap().to_string(), r["result"]["program_hash"].as_str().unwrap().to_string());
     let submit = |plan_hash: &str, program_hash: &str| {
@@ -289,7 +293,7 @@ fn the_guards_refuse_with_their_codes() {
             "plan_hash": plan_hash,
             "program_text": f.src,
             "plan_text": plan,
-            "forward_plan_text": forward_plan("idea", h),
+            "forward_plan_text": forward_plan("idea_moc", h),
             "claims": [],
             "rationale": "",
             "insample": {},

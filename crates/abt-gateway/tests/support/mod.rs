@@ -108,7 +108,7 @@ pub fn program(src: &str, name: &str) -> Program {
 
 /// The momentum book of the old study under the equities house preset.
 pub fn momentum(name: &str) -> String {
-    abt_tests::momentum(name, "equities_house")
+    abt_tests::momentum(name, "equities_house with { orders moc }")
 }
 
 /// A data service holding the market (the front's `serve_dataset`,

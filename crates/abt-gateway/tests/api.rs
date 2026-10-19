@@ -17,10 +17,10 @@ use abt_gateway::provenance;
 
 fn world() -> (World, Market, String, String) {
     let m = market(300, 200, 7);
-    let src = momentum("idea");
-    let prog = program(&src, "idea");
+    let src = momentum("idea_moc");
+    let prog = program(&src, "idea_moc");
     let w = World::new(&m.ds, &prog, 2, Config::default());
-    (w, m, src, "idea".into())
+    (w, m, src, "idea_moc".into())
 }
 
 fn ok(r: (u16, Value)) -> Value {
@@ -178,7 +178,7 @@ fn a_plan_runs_under_the_guards_and_a_submission_is_recorded() {
         programs(&name, &src.replace("execution equities_house", "execution equities_house with { lot whole; orders moo }")),
         "preset",
     );
-    refused(plan.replace("idea.dsl", "other.dsl"), programs(&name, &src), "lineage");
+    refused(plan.replace("idea_moc.dsl", "other.dsl"), programs(&name, &src), "lineage");
     refused(
         forward_plan(&name, m.h).replace("steps      { run base; report main }", "steps { run base; reveal now of base; report main }"),
         programs(&name, &src),

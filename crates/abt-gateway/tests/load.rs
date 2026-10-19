@@ -23,8 +23,8 @@ fn percentile(xs: &mut [f64], p: f64) -> f64 {
 #[test]
 fn round_trips_and_the_queue_under_eight_jobs() {
     let m = market(260, 150, 3);
-    let src = momentum("idea");
-    let prog = program(&src, "idea");
+    let src = momentum("idea_moc");
+    let prog = program(&src, "idea_moc");
     let w = World::new(&m.ds, &prog, 2, abt_gateway::api::Config { max_depth: 4, ..Default::default() });
     let addr = serve_http(w.gateway.clone());
     let token = w.agent_token("load", m.h);
@@ -63,7 +63,7 @@ fn round_trips_and_the_queue_under_eight_jobs() {
 
     // Eight fake jobs, each one plan execution of a two-point grid, on two
     // kernels: at most two in flight, the others queued; everything served.
-    let plan = Arc::new(development_plan("idea", m.h, m.first));
+    let plan = Arc::new(development_plan("idea_moc", m.h, m.first));
     let max_depth = Arc::new(AtomicUsize::new(0));
     let gateway = w.gateway.clone();
     let watcher = {
@@ -87,7 +87,7 @@ fn round_trips_and_the_queue_under_eight_jobs() {
             let (w_token, src) = (w.agent_token(&format!("fake-{}", j), m.h), src.clone());
             std::thread::spawn(move || {
                 let t = Instant::now();
-                let (status, r) = post(addr, "plan_run", Some(&w_token), &json!({ "plan": own, "programs": programs("idea", &src) }));
+                let (status, r) = post(addr, "plan_run", Some(&w_token), &json!({ "plan": own, "programs": programs("idea_moc", &src) }));
                 if status != 200 && r["error"]["code"] != "busy" {
                     println!("fake-{}: {} {}", j, status, r);
                 }

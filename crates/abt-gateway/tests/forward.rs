@@ -21,12 +21,12 @@ use abt_gateway::provenance;
 fn a_submission_is_revealed_once_per_period_and_retired_on_command() {
     logs();
     let m = market(520, 400, 5);
-    let src = momentum("idea");
-    let prog = program(&src, "idea");
+    let src = momentum("idea_moc");
+    let prog = program(&src, "idea_moc");
     let w = World::new(&m.ds, &prog, 2, Default::default());
     let token = w.agent_token("job-fwd", m.h);
-    let plan = development_plan("idea", m.h, m.first);
-    let (status, r) = w.call("plan_run", &token, json!({ "plan": plan, "programs": programs("idea", &src) }));
+    let plan = development_plan("idea_moc", m.h, m.first);
+    let (status, r) = w.call("plan_run", &token, json!({ "plan": plan, "programs": programs("idea_moc", &src) }));
     assert_eq!(status, 200, "{}", r);
     let (plan_hash, program_hash) = (r["result"]["plan_hash"].as_str().unwrap().to_string(), r["result"]["program_hash"].as_str().unwrap().to_string());
     let (status, r) = w.call(
@@ -38,7 +38,7 @@ fn a_submission_is_revealed_once_per_period_and_retired_on_command() {
             "plan_hash": plan_hash,
             "program_text": src,
             "plan_text": plan,
-            "forward_plan_text": forward_plan("idea", m.h),
+            "forward_plan_text": forward_plan("idea_moc", m.h),
             "claims": [],
             "rationale": "",
             "insample": {},
@@ -114,8 +114,8 @@ fn a_submission_is_revealed_once_per_period_and_retired_on_command() {
 #[test]
 fn a_tombstone_on_control_retires_the_submissions_of_its_document() {
     let m = market(400, 300, 6);
-    let src = momentum("idea");
-    let prog = program(&src, "idea");
+    let src = momentum("idea_moc");
+    let prog = program(&src, "idea_moc");
     let w = World::new(&m.ds, &prog, 1, Default::default());
     let doc = "11".repeat(32);
     let hyp = "22".repeat(32);
@@ -127,14 +127,14 @@ fn a_tombstone_on_control_retires_the_submissions_of_its_document() {
     );
     assert_eq!(status, 200, "{}", r);
     let token = w.agent_token("job-tomb", m.h);
-    let plan = development_plan("idea", m.h, m.first);
-    let (status, r) = w.call("plan_run", &token, json!({ "plan": plan, "programs": programs("idea", &src) }));
+    let plan = development_plan("idea_moc", m.h, m.first);
+    let (status, r) = w.call("plan_run", &token, json!({ "plan": plan, "programs": programs("idea_moc", &src) }));
     assert_eq!(status, 200, "{}", r);
     let (plan_hash, program_hash) = (r["result"]["plan_hash"].as_str().unwrap().to_string(), r["result"]["program_hash"].as_str().unwrap().to_string());
     let (status, r) = w.call(
         "submit",
         &token,
-        json!({ "hypothesis_id": hyp, "program_hash": program_hash, "plan_hash": plan_hash, "program_text": src, "plan_text": plan, "forward_plan_text": forward_plan("idea", m.h), "claims": [], "rationale": "", "insample": {} }),
+        json!({ "hypothesis_id": hyp, "program_hash": program_hash, "plan_hash": plan_hash, "program_text": src, "plan_text": plan, "forward_plan_text": forward_plan("idea_moc", m.h), "claims": [], "rationale": "", "insample": {} }),
     );
     assert_eq!(status, 200, "{}", r);
     let sid = r["result"]["submission_id"].as_str().unwrap().to_string();
