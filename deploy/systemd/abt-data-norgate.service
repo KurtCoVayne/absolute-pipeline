@@ -1,0 +1,22 @@
+[Unit]
+Description=abt-data: the Norgate continuous futures (daily, 112 roots from 1977) on a second socket
+After=network-online.target
+
+[Service]
+User=ubuntu
+LimitMEMLOCK=infinity
+LimitNOFILE=1048576
+Environment=ABT_STORE=/srv/absolute/store-norgate-futures
+# The resident cache of decoded partitions (D-3.4): the whole store is 750 MB.
+Environment=ABT_RESIDENT_BUDGET=2147483648
+ExecStartPre=/bin/mkdir -p /srv/absolute/run
+ExecStart=/bin/sh -c 'exec /srv/absolute/absolute-backtest/target/release/abt-data serve --store "$ABT_STORE" --socket /srv/absolute/run/norgate-futures.sock --profile dedicated'
+Restart=always
+RestartSec=5
+# The last process the out-of-memory killer picks: a backtest dies before the store.
+OOMScoreAdjust=-900
+StandardOutput=append:/srv/absolute/logs/abt-data-norgate.log
+StandardError=append:/srv/absolute/logs/abt-data-norgate.log
+
+[Install]
+WantedBy=multi-user.target
