@@ -1,5 +1,7 @@
-//! `abt-report build` renders the site; `abt-report fixtures` writes the
-//! sample set the tests build from.
+//! `abt-report build` renders the site; `abt-report serve` serves a built
+//! directory for local use (the machine serves it with nginx,
+//! `deploy/nginx.conf`); `abt-report fixtures` writes the sample set the
+//! tests build from.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -39,6 +41,13 @@ enum Command {
         /// Seconds to wait on the broker per poll.
         #[arg(long, default_value = "10")]
         timeout: u64,
+    },
+    /// Serves a built directory over HTTP for local reading.
+    Serve {
+        #[arg(long)]
+        out: PathBuf,
+        #[arg(long, default_value = "127.0.0.1:8080")]
+        listen: String,
     },
     /// Writes the sample fixtures (the set the tests build the site from).
     Fixtures {
@@ -94,6 +103,16 @@ fn main() -> Result<()> {
                 built.out.display(),
                 built.elapsed.as_secs_f64()
             );
+        }
+        Command::Serve { out, listen } => {
+            let rt = tokio::runtime::Runtime::new()?;
+            rt.block_on(async move {
+                let app = axum::Router::new().fallback_service(tower_http::services::ServeDir::new(&out).append_index_html_on_directories(true));
+                let listener = tokio::net::TcpListener::bind(&listen).await.with_context(|| listen.clone())?;
+                println!("serving {} on http://{}/", out.display(), listen);
+                axum::serve(listener, app).await?;
+                Ok::<(), anyhow::Error>(())
+            })?;
         }
         Command::Fixtures { out } => {
             let n = abt_report::sample::write(&out)?;
