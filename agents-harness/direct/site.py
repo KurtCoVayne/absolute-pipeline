@@ -119,14 +119,25 @@ def page(title: str, body: str) -> str:
 # ---------------------------------------------------------------- inputs
 
 
-def seeds(path: Path) -> list[dict[str, str]]:
-    rows = []
-    for line in path.read_text("utf-8").splitlines():
-        if not line.strip() or line.startswith("#") or line.startswith("created_utc"):
+def campaign_of(path: Path) -> str:
+    """The campaign a post list names: `seed-posts.tsv` the seed, `campaign-2-posts.tsv` campaign 2."""
+    stem = path.name.removesuffix(".tsv").removesuffix("-posts")
+    return "seed" if stem == "seed" else stem.replace("-", " ")
+
+
+def seeds(paths: str | Path) -> list[dict[str, str]]:
+    """The posts of one list or of several, comma-separated (the seed and campaign 2)."""
+    rows, seen = [], set()
+    for path in [Path(x) for x in str(paths).split(",") if x]:
+        if not path.exists():
             continue
-        c = line.split("\t")
-        if len(c) >= 4:
-            rows.append({"created": c[0], "handle": c[1], "id": c[2], "url": c[3]})
+        for line in path.read_text("utf-8").splitlines():
+            if not line.strip() or line.startswith("#") or line.startswith("created_utc"):
+                continue
+            c = line.split("\t")
+            if len(c) >= 4 and c[2] not in seen:
+                seen.add(c[2])
+                rows.append({"created": c[0], "handle": c[1], "id": c[2], "url": c[3], "campaign": campaign_of(path)})
     return rows
 
 
@@ -668,7 +679,8 @@ def verdict_line(p: Post) -> str:
 def index_page(posts: list[Post], built: str) -> str:
     kinds = [p.state()[0] for p in posts]
     n_full, n_no, n_pend = kinds.count("full"), kinds.count("no"), kinds.count("pend")
-    b = "<h1>Seed campaign: 50 tweets</h1>"
+    camps = sorted({p.seed.get("campaign", "seed") for p in posts}, key=lambda c: (c != "seed", c))
+    b = f"<h1>{esc(' and '.join(camps).capitalize())}: {len(posts)} tweets</h1>"
     b += f"<p class=muted>Built {esc(built)}. Each tweet links to its report. Plans: window ending at the tweet's creation time H, hold-out trailing 20 %, budget money 0, the futures_house preset. Private: X content for the owner only; nothing trades.</p>"
     b += (
         f"<div class=counts><div class=card><b>{n_full}</b>full backtests</div><div class=card><b>{n_no}</b>not testable</div>"
@@ -679,16 +691,16 @@ def index_page(posts: list[Post], built: str) -> str:
         kind, line = p.state()
         excerpt = (p.text[:160] + "…") if len(p.text) > 160 else p.text
         rows += (
-            f'<tr><td>{esc(day(p.created)[:10])}</td><td>@{esc(p.handle)}</td><td><a href="t/{esc(p.id)}.html">{esc(excerpt) or "<i>text pending</i>"}</a></td>'
+            f'<tr><td>{esc(day(p.created)[:10])}</td><td>{esc(p.seed.get("campaign", "seed"))}</td><td>@{esc(p.handle)}</td><td><a href="t/{esc(p.id)}.html">{esc(excerpt) or "<i>text pending</i>"}</a></td>'
             f'<td><span class="pill {kind}">{esc(line[:140])}</span></td><td>{esc(verdict_line(p)[:200])}</td></tr>'
         )
-    b += f"<div class=wrap><table><tr><th>Date</th><th>Author</th><th>Tweet</th><th>Status</th><th>Verdict</th></tr>{rows}</table></div>"
+    b += f"<div class=wrap><table><tr><th>Date</th><th>Campaign</th><th>Author</th><th>Tweet</th><th>Status</th><th>Verdict</th></tr>{rows}</table></div>"
     return page("Seed campaign", b)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seeds", type=Path, required=True)
+    ap.add_argument("--seeds", required=True, help="one post list or several, comma-separated")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--site", type=Path, required=True)
     ap.add_argument("--mirror", type=Path)

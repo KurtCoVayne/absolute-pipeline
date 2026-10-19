@@ -82,13 +82,23 @@ def status(d: Path, state: str, stage: str, reason: str = "", **extra: Any) -> N
     write(d, "status.json", {"state": state, "stage": stage, "reason": reason, "updated": now(), **extra})
 
 
-def seed_rows() -> list[dict[str, str]]:
-    rows = []
-    for line in (P / "docs" / "design" / "fixtures" / "seed-posts.tsv").read_text(encoding="utf-8").splitlines():
-        if line.startswith("#") or line.startswith("created_utc") or not line.strip():
+POST_LISTS = "docs/design/fixtures/seed-posts.tsv,docs/design/fixtures/campaign-2-posts.tsv"
+
+
+def seed_rows(lists: str = POST_LISTS) -> list[dict[str, str]]:
+    """The posts of the lists named (relative to the repository, comma-separated): the seed and campaign 2 by default."""
+    rows, seen = [], set()
+    for name in [x for x in lists.split(",") if x]:
+        path = Path(name) if Path(name).is_absolute() else P / name
+        if not path.exists():
             continue
-        c = line.split("\t")
-        rows.append({"created": c[0], "handle": c[1], "post_id": c[2], "url": c[3]})
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith("#") or line.startswith("created_utc") or not line.strip():
+                continue
+            c = line.split("\t")
+            if c[2] not in seen:
+                seen.add(c[2])
+                rows.append({"created": c[0], "handle": c[1], "post_id": c[2], "url": c[3]})
     return rows
 
 
@@ -360,12 +370,13 @@ def main() -> int:
     ap.add_argument("--parallel", type=int, default=3)
     ap.add_argument("--only", default="")
     ap.add_argument("--cap-usd", type=float, default=50.0)
+    ap.add_argument("--posts", default=POST_LISTS, help="the post lists, comma-separated")
     a = ap.parse_args()
     key = Path("/etc/absolute-pipeline/openai_api_key").read_text(encoding="utf-8").strip()
     docs = {d["source_id"]: d for d in jsonl(QUEUE / "docs.jsonl")}
     roots = staged_roots()
     names = entity_names()
-    posts = [p for p in seed_rows() if not a.only or p["post_id"] in a.only.split(",")]
+    posts = [p for p in seed_rows(a.posts) if not a.only or p["post_id"] in a.only.split(",")]
     order = []
     for p in posts:
         doc = docs.get(p["post_id"])

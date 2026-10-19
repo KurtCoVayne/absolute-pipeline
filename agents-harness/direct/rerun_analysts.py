@@ -420,13 +420,16 @@ def run_job(jd: Path, roots: list[str], key: str) -> None:
     append_line(QUEUE / "jobs.jsonl", {"record": "Job", "id": jd.name, "stage": job.get("stage"), "agent": job.get("agent"), "cost_usd": cost, "campaign": "seed-1-reread", "r": now()})
 
 
+TEXT_ONLY = False  # campaign 2 (the owner): no images, no linked pages, no xAI article fetches
+
+
 def reread(post_id: str, doc: dict[str, Any], h: str, data_map: str, roots: list[str], key: str, xai_key: str | None, dry: bool) -> str:
     d = OUT / post_id
     mirror = load(SEED / f"{post_id}.json") or {}
     text = str(doc.get("text", ""))
-    images = images_of(mirror, text)
+    images = [] if TEXT_ONLY else images_of(mirror, text)
     post_url = str(((load(d / "tweet.json") or {}).get("url")) or f"https://x.com/i/status/{post_id}")
-    linked = linked_document(doc, post_url, xai_key, dry=dry)
+    linked = None if TEXT_ONLY else linked_document(doc, post_url, xai_key, dry=dry)
     docs = [doc] + ([linked] if linked and "error" not in linked else [])
     note = {"images": len(images), "linked": (linked or {}).get("via") or (linked or {}).get("error")}
     if dry:
@@ -467,6 +470,8 @@ def candidates(only: set[str]) -> list[str]:
             continue
         if st.get("stage") == "analyst" and str(st.get("reason", "")).startswith("not testable"):
             out.append(d.name)
+        elif st.get("stage") == "analyst" and st.get("state") == "queued":
+            out.append(d.name)  # a new post (campaign 2) that no analyst has read
     return out
 
 
@@ -475,7 +480,10 @@ def main() -> int:
     ap.add_argument("--only", default="")
     ap.add_argument("--parallel", type=int, default=6)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--text-only", action="store_true", help="no images, no linked pages, no xAI article fetches")
     a = ap.parse_args()
+    global TEXT_ONLY
+    TEXT_ONLY = a.text_only
     key = Path("/etc/absolute-pipeline/openai_api_key").read_text(encoding="utf-8").strip()
     xk = Path("/etc/absolute-pipeline/xai_api_key")
     xai_key = xk.read_text(encoding="utf-8").strip() if xk.exists() else None

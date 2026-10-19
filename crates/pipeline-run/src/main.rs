@@ -50,6 +50,10 @@ enum Cmd {
         batch: usize,
         #[arg(long, default_value = "grok-4.20-non-reasoning")]
         model: String,
+        /// The documents from the mirror's verified copies alone, with no xAI
+        /// request (campaign 2: the posts were found through xAI already).
+        #[arg(long)]
+        mirror_only: bool,
     },
     /// Triage, analyst and quant over the queue's documents.
     Run {
@@ -105,7 +109,8 @@ fn main() {
             cap_usd,
             batch,
             model,
-        } => fetch(&posts, &mirror, &queue, &xai_key, cap_usd, batch, &model),
+            mirror_only,
+        } => fetch(&posts, &mirror, &queue, &xai_key, cap_usd, if mirror_only { 0 } else { batch }, &model),
         Cmd::Run {
             queue,
             skills,
@@ -210,12 +215,17 @@ fn fetch(posts: &Path, mirror: &Path, queue: &Path, key: &Path, cap_usd: f64, ba
     if queue.join("docs.jsonl").exists() {
         return Err(format!("{} holds documents already; the fetch runs once", queue.display()));
     }
-    let key = fs::read_to_string(key).map_err(|e| e.to_string())?.trim().to_string();
     let rows = seeds(posts)?;
+    // A batch of 0 is the mirror-only mode: no xAI request.
+    let key = if batch == 0 {
+        String::new()
+    } else {
+        fs::read_to_string(key).map_err(|e| e.to_string())?.trim().to_string()
+    };
     let client = reqwest::blocking::Client::builder().timeout(Duration::from_secs(600)).build().map_err(|e| e.to_string())?;
     let mut spent = 0.0f64;
     let mut got: BTreeMap<String, (Value, String)> = BTreeMap::new(); // id -> (post, raw id)
-    for (k, chunk) in rows.chunks(batch.max(1)).enumerate() {
+    for (k, chunk) in rows.chunks(batch.max(1)).enumerate().take(if batch == 0 { 0 } else { usize::MAX }) {
         // The guard: a request is made only while the spend plus the
         // dearest response seen so far stays under the cap.
         if spent + 1.0 > cap_usd {
