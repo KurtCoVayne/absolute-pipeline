@@ -1,6 +1,6 @@
 ---
 name: write-strategy
-version: 2
+version: 3
 ---
 # Write the strategy: the protocol as a loop
 
@@ -22,6 +22,12 @@ Read `hypothesis.json`'s content in your input: the statement, the universe, the
 ## Step 2 · Translate
 
 Write the program (`abt-language`, `abt-idioms`): the nine blocks, `execution futures_house` (or `equities_house`), the author's parameters as the base case in `params` with ranges for the two the grid will vary, a `side` parameter (0 both, 1 long, -1 short) and the stop as a parameter when the author has one, an `only : Label = "all"` parameter read by `universe` so a plan can restrict the sanity and check runs to one market. House sizing (`risk_pct = 0.0075`, `stop_ix = 2`, `N_full` from ATR20 and the point value, the idiom of `abt-idioms` §11). Signals in points or ATR units on continuous futures.
+
+Three facts of this store and checker, learnt on the seed campaign:
+
+- **The order type on daily bars.** `orders moo_moc` (the presets' field) is an intraday order: on a `@1d` decision clock the checker refuses it (WF-14). A daily program takes the preset's single-field variant, in a strategy whose name says so: `strategy <slug>_moo { … execution futures_house with { orders moo } … }` (the decision at the close, the fill at the next open: the default) or `…_moc` with `{ orders moc }` when the author fills at the close. On a sub-daily clock (`@1m`, `@30m`) the preset stands as written.
+- **The bars are reviewed complete.** `need bars @1d from <date> complete` resolves on the store's futures and equities; declare `complete` whenever a rule negates a guard that reads a primitive (WF-5).
+- **Costs come from the preset.** There is no `commission` relation: never `need commission`; the preset's `commission per_contract 3.75` is the cost.
 
 ```
 check(program=<text>, name="<slug>")
