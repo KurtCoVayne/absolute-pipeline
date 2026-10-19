@@ -685,11 +685,13 @@ impl Gateway {
         req.with_seq = body.get("with_seq").and_then(Value::as_bool).unwrap_or(false);
         let seq = if kind == "chain" { None } else { self.horizon.seq_of(&self.layers, &relation, grant.h)? };
         query::clamp(&mut req, grant.h, seq);
+        let effective = req.receipt_filter.as_ref().and_then(|f| f.r_max).unwrap_or(grant.h);
         let (_, batches) = self.layers.query(req)?;
         let (t, bytes) = self.table(grant, &batches)?;
         let mut v = serde_json::to_value(&t).unwrap_or(Value::Null);
         if let Value::Object(m) = &mut v {
-            m.insert("r_max".into(), Value::String(pipeline_wire::iso(grant.h)));
+            m.insert("r_max".into(), Value::String(pipeline_wire::iso(effective)));
+            m.insert("h".into(), Value::String(pipeline_wire::iso(grant.h)));
             m.insert("as_of_seq".into(), seq.map(Value::from).unwrap_or(Value::Null));
         }
         done_with(v, format!("{}:{}", kind, relation), bytes)
