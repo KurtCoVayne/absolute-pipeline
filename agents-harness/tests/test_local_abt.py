@@ -52,3 +52,30 @@ def test_query_run_reruns_the_runs_program_at_its_point_over_its_window(tmp_path
     assert "W9" not in out["text"] and "entry  120  0" in out["text"]
     b.call("query_run", {"run_id": "r-san", "text": "trace decide at 2026-02-02"})
     assert calls[-1][calls[-1].index("--start") + 1] == "2025-01-02"
+
+
+def test_the_three_year_window_binds_only_programs_that_read_minutes(tmp_path: Path, monkeypatch: Any) -> None:
+    from agents_harness.gateway import GatewayError
+    from agents_harness.local import reads_minutes
+
+    daily = "strategy d_moo {\n  data { class future  need bars @1m from 2010-06-07 complete }\n  calendars { session = sessions }\n  clock { decide on session }\n}\n"
+    intraday = "strategy i {\n  data { class future  need bars @1m complete }\n  clock { decide on base at session + 30min }\n}\n"
+    equity = "strategy e {\n  data { class equity  need bars @1d }\n  clock { decide on base }\n}\n"
+    assert not reads_minutes(daily) and reads_minutes(intraday) and not reads_minutes(equity)
+    assert reads_minutes("strategy f {\n  data { class future }\n  clock { decide on base }\n}\n")
+    monkeypatch.setattr(local.glob, "glob", lambda pat: [])
+    b = LocalAbt(h="2026-09-19T17:55:02Z", work=tmp_path)
+    plan = "study idea_d {\n  window 2010-06-07 .. 2026-09-19T17:55:02Z\n  holdout trailing:20%\n  budget { money 0; bytes 2G; requests 0 }\n}\n"
+    monkeypatch.delenv("ABT_DAILY_BINDING", raising=False)
+    try:
+        b.guard_plan(plan, {"d_moo.dsl": daily})
+        raise AssertionError("the 3-year window should bind before the daily binding lands")
+    except GatewayError as e:
+        assert e.code == "window"
+    monkeypatch.setenv("ABT_DAILY_BINDING", "1")
+    assert b.guard_plan(plan, {"d_moo.dsl": daily}) == plan
+    try:
+        b.guard_plan(plan, {"i.dsl": intraday})
+        raise AssertionError("an intraday program keeps the 3-year window")
+    except GatewayError as e:
+        assert e.code == "window"

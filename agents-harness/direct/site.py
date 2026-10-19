@@ -20,6 +20,7 @@ import html
 import json
 import math
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -157,8 +158,15 @@ class Post:
         self.quant = load(d / "quant.json") or {}
         self.report = load(d / "report.json") or {}
         self.reveal = load(d / "reveal.json") or {}
+        check = load(d / "check.json") or {}
+        self.check: dict[str, Any] = check.get("plan_run") or check
+        # A translation-check plan is never the result, wherever it was written.
+        if self.report and not is_development_report(self.report):
+            self.check, self.report, self.reveal, self.nav_ok = self.report, {}, {}, False
+        else:
+            self.nav_ok = True
         self.verdict = load(d / "verdict.json") or {}
-        self.nav = read_nav(d / "nav.csv")
+        self.nav = read_nav(d / "nav.csv") if self.nav_ok and self.report else []
         self.mirror: dict[str, Any] = {}
         if mirror is not None:
             m = load(mirror / f"{self.id}.json") or {}
@@ -215,6 +223,9 @@ class Post:
         """(full | no | pend, the line the index shows)."""
         if self.base() is not None:
             return "full", "full backtest"
+        if self.check and str(self.status.get("state") or "") not in ("running", "queued", ""):
+            reason = self.quant.get("reason") or self.status.get("reason") or "only the translation check ran"
+            return "no", f"backtest not completed: {reason}"
         st = str(self.status.get("state") or "")
         reason = self.status.get("reason") or self.quant.get("reason") or self.analysis.get("reason") or ""
         if st in ("not_testable", "no_hypothesis", "no_data", "failed", "could_not_check", "no_decisions", "budget", "error"):
@@ -223,6 +234,31 @@ class Post:
         if st in ("full", "done") and not self.report:
             return "pend", "backtest finished, report pending"
         return "pend", f"pending ({self.status.get('stage') or 'queued'})"
+
+
+def is_development_report(run: dict[str, Any]) -> bool:
+    """A development plan's report: not a `check_` plan, with a grid and the out-of-sample reveal."""
+    nf = str(run.get("normal_form") or "")
+    return not str(run.get("plan") or "").startswith("check_") and bool(re.search(r"\bgrid\s+\w+", nf)) and bool(re.search(r"\breveal\s+\w+\s+of\b", nf))
+
+
+def check_html(check: dict[str, Any]) -> str:
+    """The translation check, labelled as such: one market, a short window; never a result."""
+    outs = [o for o in check.get("outcomes") or [] if o.get("status") == "completed"]
+    rows = []
+    for o in outs:
+        t = o.get("trades") or {}
+        w = o.get("window") or []
+        rows.append(
+            f"<tr><td>{esc(o.get('step'))}</td><td>{esc(' .. '.join(str(x)[:10] for x in w))}</td><td>{esc((o.get('trading') or {}).get('decisions'))}</td>"
+            f"<td>{esc(t.get('trades'))}</td><td>{num(t.get('net_profit'), 'usd') if t.get('net_profit') is not None else '—'}</td></tr>"
+        )
+    table = "<div class=wrap><table><tr><th>Run</th><th>Window</th><th>Decisions</th><th>Trades</th><th>Net profit</th></tr>" + "".join(rows) + "</table></div>" if rows else ""
+    return (
+        "<h3>Translation check (one market, short window)</h3>"
+        f"<p class=muted>Plan <code>{esc(check.get('plan'))}</code>: the quant's check that the program trades as written, "
+        "recomputed by hand. It is not a backtest and its numbers are not a result.</p>" + table
+    )
 
 
 def read_nav(p: Path) -> list[tuple[dt.datetime, float]]:
@@ -641,8 +677,11 @@ def tweet_page(p: Post, built: str) -> str:
     if emb and emb[0]:
         oos_from = parse_time(emb[0][0])
     b += "<h2>The results</h2>"
-    if base is None and not p.nav:
-        b += f"<p class=muted>No backtest. {esc(line)}</p>"
+    if base is None:
+        reason = p.quant.get("reason") or p.status.get("reason") or line
+        b += f"<p><b>Backtest not completed:</b> {esc(reason)}</p>"
+        if p.check:
+            b += check_html(p.check)
     else:
         b += "<h3>Equity on the fixed $1M base</h3>" + chart(p.nav, "var(--chart)", "Equity curve", oos_from, False)
         b += "<h3>Drawdown, % of $1M</h3>" + chart(drawdown(p.nav), "var(--dd)", "Drawdown", oos_from, True)

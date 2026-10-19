@@ -82,6 +82,17 @@ def _num(c: str) -> Any:
         return c
 
 
+def reads_minutes(program: str) -> bool:
+    """Whether a program evaluates on minute bars directly: an intraday decision clock
+    (`decide on base` on the futures class, `at session + …`), a sub-session interval
+    (`session(X, [0min, …))`), or a rule on an `@1m` key. A daily program decides on
+    sessions (or on an equity's daily base) and reads bars through `@session` views."""
+    body = re.sub(r"data\s*\{[^}]*\}", "", program)
+    if re.search(r"decide\s+on\s+base\s+at\b", body) or re.search(r"session\s*\(\s*\w+\s*,\s*\[", body) or "@1m" in body:
+        return True
+    return bool(re.search(r"class\s+future", program) and re.search(r"decide\s+on\s+base\b", body))
+
+
 def available_gb() -> float:
     """MemAvailable from /proc/meminfo, in GB (a large number off Linux)."""
     try:
@@ -371,8 +382,12 @@ class LocalAbt:
 
     # ------------------------------------------------------------------ plans
 
-    def guard_plan(self, plan: str) -> str:
-        """The rules that survive the cut; the plan's text, unchanged, when it passes."""
+    def guard_plan(self, plan: str, programs: dict[str, str] | None = None) -> str:
+        """The rules that survive the cut; the plan's text, unchanged, when it passes. The window's
+        start is limited to three years before H only while a run streams minute bars: always for a
+        program that reads them directly (an intraday clock or session interval), and for every
+        futures program until the daily-level binding lands (`ABT_DAILY_BINDING=1` lifts it for
+        the daily ones, which then run the store's whole span)."""
         w = _WINDOW.search(plan)
         if not w:
             raise GatewayError("holdout", f"a plan writes `window <start> .. {self.h_text}` (the window ends at H)")
@@ -388,7 +403,8 @@ class LocalAbt:
         except ValueError as e:
             raise GatewayError("window", f"the window's start `{w.group(2)}` is not a date") from e
         earliest = self.h - timedelta(days=365 * WINDOW_YEARS + 1)
-        if start_dt < earliest:
+        limited = os.environ.get("ABT_DAILY_BINDING") != "1" or any(reads_minutes(t) for t in (programs or {}).values())
+        if limited and start_dt < earliest:
             raise GatewayError(
                 "window",
                 f"the window starts no earlier than {WINDOW_YEARS} years before H on this machine (a futures run streams every staged root's minute bars; "
@@ -403,8 +419,8 @@ class LocalAbt:
         return plan
 
     def _plan_files(self, body: dict[str, Any]) -> tuple[Path, list[str], str]:
-        plan = self.guard_plan(str(body.get("plan") or ""))
         programs = {str(k): str(v) for k, v in (body.get("programs") or {}).items()}
+        plan = self.guard_plan(str(body.get("plan") or ""), programs)
         files = self._program_files(programs)
         m = re.search(r"^\s*study\s+([A-Za-z_]\w*)", plan, re.M)
         study = m.group(1) if m else "idea"
