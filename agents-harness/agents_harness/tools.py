@@ -59,6 +59,8 @@ class QuantState:
 
     checks_used: int = 0
     plan_attempts: int = 0
+    # Runs that decided nothing and are not yet explained by a `why not`/`trace`/`coverage` query.
+    zero_runs: list[str] = field(default_factory=list)
     resolved: set[str] = field(default_factory=set)
     clean: dict[str, str] = field(default_factory=dict)  # program hash -> text, as the checker accepted it
     names: dict[str, str] = field(default_factory=dict)  # program hash -> strategy name
@@ -315,6 +317,9 @@ def _abt_plan(ctx: Context) -> list[FunctionTool]:
         """Validate a plan without running it: its hash, normal form, trials_expected and steps, after the gateway's guards. `program_name` is the slug the plan's `program <slug>.dsl` names; `program` its text (checked clean)."""
         ctx.meter.add_tool_call()
         q.plan_attempts += 1
+        gate = zero_gate(ctx)
+        if gate:
+            return _refused("zero_decisions", gate)
         try:
             _validate_plan(ctx, plan, program_name, program)
         except guards.Refused as e:
@@ -325,6 +330,9 @@ def _abt_plan(ctx: Context) -> list[FunctionTool]:
         """Run a plan (counted against plan_runs and grid_points): the plan hash, the runs with their decisions, and the report. `program_name` is the slug the plan's `program <slug>.dsl` names; `program` its text (checked clean)."""
         ctx.meter.add_tool_call()
         q.plan_attempts += 1
+        gate = zero_gate(ctx)
+        if gate:
+            return _refused("zero_decisions", gate)
         try:
             program_hash, holdout = _validate_plan(ctx, plan, program_name, program)
         except guards.Refused as e:
@@ -357,10 +365,18 @@ def _abt_plan(ctx: Context) -> list[FunctionTool]:
             runs=runs,
             report=result.get("report") if isinstance(result, dict) else None,
         )
-        zero = [r.get("step") for r in runs if int(r.get("decisions") or 0) == 0]
+        zero = [r for r in runs if int(r.get("decisions") or 0) == 0 and r.get("run_id")]
+        answer: dict[str, Any] = {"ok": True}
         if zero:
-            ctx.notes.append(f'plan {plan_hash[:12]}: steps with decisions = 0: {zero} (a failure, never a result; `query_run(run_id, "coverage over …")`)')
-        return _dumps({"ok": True, "result": result, "plan_runs_used": q.plan_runs_used, "plan_runs_left": max(0, cap - q.plan_runs_used) if cap else None})
+            q.zero_runs = [str(r["run_id"]) for r in zero]
+            steps = [r.get("step") for r in zero]
+            ctx.notes.append(f"plan {plan_hash[:12]}: steps with decisions = 0: {steps} (a failure, never a result)")
+            answer["attention"] = (
+                f"DECISIONS = 0 in {steps}: the program traded nothing. Before any other plan or the end of the job, ask the kernel why: "
+                f'query_run("{q.zero_runs[0]}", "coverage over <window>"), then "why not decide(T, _) at <bar>" or "trace decide at <bar>".'
+            )
+        answer.update({"result": result, "plan_runs_used": q.plan_runs_used, "plan_runs_left": max(0, cap - q.plan_runs_used) if cap else None})
+        return _dumps(answer)
 
     return [function_tool(f, failure_error_function=None) for f in (plan_check, plan_run)]
 
@@ -394,6 +410,8 @@ def _abt_query_run(ctx: Context) -> list[FunctionTool]:
         if run_id not in q.run_ids:
             return _refused("no_run", f"{run_id} is not a run this job made: {sorted(q.run_ids)}")
         q.query_runs += 1
+        if run_id in q.zero_runs and re.search(r"\b(why\s+not|trace|coverage)\b", text):
+            q.zero_runs = []  # one explaining query on a silent run of the plan diagnoses the program
         return _call(ctx, "query_run", {"run_id": run_id, "text": text})
 
     return [function_tool(query_run, failure_error_function=None)]
@@ -530,6 +548,21 @@ BUILDERS = {
 MIN_CHECKS_BEFORE_GIVING_UP = 3
 
 
+def zero_gate(ctx: Context) -> str | None:
+    """While a run that decided nothing is unexplained, no other plan runs and
+    the job does not end: ask the kernel why first (abt-idioms §6)."""
+    q = ctx.quant
+    if not q.zero_runs:
+        return None
+    rid = q.zero_runs[0]
+    return (
+        f"Refused: run {rid} decided nothing (decisions = 0) and was not asked why. A program that trades nothing is a translation "
+        f'bug until shown otherwise. First: query_run("{rid}", "coverage over <the run\'s window>") names the first empty relation on '
+        f'the path to decide; then query_run("{rid}", "why not decide(T, _) at <a bar you expected a trade>") or '
+        f'query_run("{rid}", "trace decide at <that bar>"). Fix the rule it names, check again, then run the plan.'
+    )
+
+
 def _roots_in_hypothesis(ctx: Context) -> set[str]:
     """The staged roots (ABT_ROOTS) the hypothesis names, as words of its text."""
     roots = {r for r in os.environ.get("ABT_ROOTS", "").split(",") if r}
@@ -543,6 +576,8 @@ def end_refusal(ctx: Context, outcome: str) -> str | None:
     needs one check when the idea's roots are in the store. A job that ran or
     tried a plan has tried: its ending stands."""
     q = ctx.quant
+    if outcome != "submitted" and zero_gate(ctx):
+        return zero_gate(ctx)
     if outcome == "could_not_check" and q.checks_used < MIN_CHECKS_BEFORE_GIVING_UP and not q.plans and q.plan_attempts == 0:
         return (
             f"Refused: `could_not_check` needs at least {MIN_CHECKS_BEFORE_GIVING_UP} `check` calls and this job made {q.checks_used}. "

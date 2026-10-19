@@ -179,6 +179,8 @@ def test_zero_decisions_is_a_failure(tmp_path: Path, fake_openai, fake_gateway, 
     fake_openai.script = [
         ToolCalls([("check", {"program": silent, "name": "sma50_es"})]),
         ToolCalls([("plan_run", {"plan": DEV_PLAN, "program_name": "sma50_es", "program": silent})]),
+        # A run that decided nothing must be asked why before the job may end (or run another plan).
+        ToolCalls([("query_run", {"run_id": "run_001", "text": "coverage over 2019-01-02 .. 2019-06-28"})]),
         done("could_not_check", "no trades"),
     ]
     assert run_harness(built) == 0

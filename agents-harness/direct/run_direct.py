@@ -237,16 +237,32 @@ def run_quant(jd: Path, roots: list[str], key: str, wall_s: float) -> int | None
             return 2
 
 
+def is_development_plan(plan: str) -> bool:
+    """The development plan of write-strategy step 4: a grid step and the out-of-sample reveal."""
+    return bool(re.search(r"\bgrid\s+\w+", plan) and re.search(r"\breveal\s+\w+\s+of\b", plan))
+
+
 def collect(post: dict[str, str], d: Path, jd: Path, hyp: dict[str, Any], h: str, roots: list[str], names: dict[str, str]) -> None:
     out = jd / "out"
     st = load(out / "status.json") or {}
     notes = (out / "notes.md").read_text(encoding="utf-8") if (out / "notes.md").exists() else ""
     cost = load(out / "cost.json") or {}
     work = out / "abt"
-    last = load(work / "last_plan.json") or {}
+    # The development plan (base, grid and the out-of-sample reveal, ending at H) is the backtest;
+    # a translation-check plan is kept as check.json and never shown as the result.
+    plans = [load(p) or {} for p in sorted(work.glob("plan-*.json"), key=lambda p: p.stat().st_mtime)]
+    plans = [r for r in plans if r] or ([load(work / "last_plan.json")] if (work / "last_plan.json").exists() else [])
+    dev = [r for r in plans if is_development_plan(str(r.get("plan") or ""))]
+    checks_ = [r for r in plans if not is_development_plan(str(r.get("plan") or ""))]
+    last = dev[-1] if dev else {}
+    for stale in ("report.json", "reveal.json", "plan_report.json", "nav.csv", "check.json"):
+        (d / stale).unlink(missing_ok=True)
+    if checks_:
+        c = checks_[-1]
+        write(d, "check.json", {"plan": c.get("plan"), "plan_hash": c.get("plan_hash"), "runs": c.get("runs"), "plan_run": (c.get("report") or {}).get("plan_run")})
     sub = load(work / "submission.json") or {}
     recs = [r for r in jsonl(out / "records.jsonl") if r.get("record") == "Submission"]
-    programs = last.get("programs") or {}
+    programs = last.get("programs") or (checks_[-1].get("programs") if checks_ else {}) or {}
     program = next(iter(programs.values()), "") if programs else ""
     if not program:
         # The last program the checker saw, when no plan ran.
@@ -278,11 +294,11 @@ def collect(post: dict[str, str], d: Path, jd: Path, hyp: dict[str, Any], h: str
     lineage = ""
     if plan_run.get("program_hash"):
         lineage = str(plan_run.get("lineage") or "")
-    full = any(o.get("step") == "base" and o.get("status") == "completed" for o in plan_run.get("outcomes") or [])
+    full = bool(dev) and any(o.get("step") == "base" and o.get("status") == "completed" for o in plan_run.get("outcomes") or [])
     rationale = str(sub.get("rationale") or (recs[0].get("rationale") if recs else "") or "")
     quant = {
         "state": st.get("state"),
-        "reason": st.get("reason") or ("" if full else "no development plan ran"),
+        "reason": st.get("reason") or ("" if full else ("only a translation-check plan ran" if checks_ else "no development plan ran")),
         "detail": st.get("detail"),
         "h": h,
         "roots": roots_of(program, hyp, roots),

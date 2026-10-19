@@ -52,3 +52,34 @@ def test_not_testable_on_a_staged_root_needs_a_check() -> None:
 def test_other_endings_pass() -> None:
     for outcome in ("no_data", "no_decisions", "submitted"):
         assert end_refusal(ctx(ES_IDEA), outcome) is None
+
+
+def test_a_run_that_decided_nothing_must_be_asked_why_first() -> None:
+    from agents_harness.tools import zero_gate
+
+    c = ctx(ES_IDEA, checks=3)
+    c.quant.plans["h"] = object()
+    c.quant.zero_runs = ["run-1"]
+    msg = zero_gate(c)
+    assert msg and "run-1" in msg and "coverage over" in msg and "why not decide" in msg
+    # No ending (but a submission) while it stands, not even after a plan ran.
+    for outcome in ("could_not_check", "no_decisions", "not_testable", "no_data"):
+        assert end_refusal(c, outcome) == msg
+    assert end_refusal(c, "submitted") is None
+    c.quant.zero_runs = []
+    assert zero_gate(c) is None and end_refusal(c, "no_decisions") is None
+
+
+def test_only_the_development_plan_is_the_backtest() -> None:
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location("run_direct", Path(__file__).resolve().parents[1] / "direct" / "run_direct.py")
+    assert spec and spec.loader
+    rd = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rd)
+    dev = "study idea_x {\n  holdout trailing:20%\n  steps { run base   grid sens   reveal oos of base   report main }\n}"
+    check = "study check_x {\n  holdout trailing:20%\n  steps { run check observe atr   report main }\n}"
+    assert rd.is_development_plan(dev)
+    assert not rd.is_development_plan(check)
+    assert not rd.is_development_plan(dev.replace("grid sens", ""))
