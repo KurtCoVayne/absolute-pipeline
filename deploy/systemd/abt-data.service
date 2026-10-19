@@ -1,0 +1,23 @@
+[Unit]
+Description=abt-data: the data layer over /srv/absolute/store (dedicated profile)
+After=network-online.target
+
+[Service]
+User=ubuntu
+LimitMEMLOCK=infinity
+LimitNOFILE=1048576
+Environment=ABT_STORE=/srv/absolute/store
+# The resident cache of decoded partitions (D-3.4): half the machine by default, 40 GB observed while serving;
+# capped so the runs and the staging keep their memory.
+Environment=ABT_RESIDENT_BUDGET=6442450944
+ExecStartPre=/bin/mkdir -p /srv/absolute/run
+ExecStart=/bin/sh -c 'exec /srv/absolute/absolute-backtest/target/release/abt-data serve --store "$ABT_STORE" --socket /srv/absolute/run/data.sock --profile dedicated'
+Restart=always
+RestartSec=5
+# The last process the out-of-memory killer picks: a backtest dies before the store.
+OOMScoreAdjust=-900
+StandardOutput=append:/srv/absolute/logs/abt-data.log
+StandardError=append:/srv/absolute/logs/abt-data.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=The seed site: rebuilds /srv/absolute/site from /srv/absolute/direct/out every 60 s
+After=network-online.target
+
+[Service]
+User=ubuntu
+ExecStart=/bin/bash /srv/absolute/absolute-pipeline/deploy/site-loop.sh loop
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

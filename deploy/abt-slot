@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# abt in one of the machine's SLOTS slots, each memory-capped (CAP), so that
+# several agents share the machine without the out-of-memory killer taking
+# the data service: waits for a free slot, then runs
+# /srv/absolute/absolute-backtest/target/release/abt "$@" under the cap.
+#   abt-slot plan run study.study prog.dsl <library> --data /srv/absolute/run/data.sock --kernels 2 --json
+SLOTS=${SLOTS:-5}; CAP=${CAP:-10G}
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+ABT=/srv/absolute/absolute-backtest/target/release/abt
+mkdir -p /srv/absolute/locks
+while true; do
+  for i in $(seq 1 "$SLOTS"); do
+    exec 9>"/srv/absolute/locks/slot-$i"
+    if flock -n 9; then
+      exec systemd-run --user --scope --quiet -p MemoryMax="$CAP" -p MemorySwapMax=0 "$ABT" "$@"
+    fi
+    exec 9>&-
+  done
+  sleep 5
+done
