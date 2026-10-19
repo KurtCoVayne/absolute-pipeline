@@ -14,11 +14,20 @@ LOGS=${LOGS:-/srv/absolute/logs/full}; mkdir -p "$LOGS" "$STORE"
 SUM="$LOGS/summary.log"; touch "$SUM"
 L=/srv/absolute/data/vendor/ndlake
 CAP=${CAP:-20G}
+# Sessions of every Databento ingest, CME and ICE alike (E-108): the daily break's middle at 17:45
+# New York and a 20-minute gap, so a bar in the break's first minute and the ES family's pre-2012
+# 30-minute break both end a trade date.
+DBN_SESSIONS="--session-break 17:45 --session-gap 20"
 memwait() { while [ "$(free -g | awk '/Mem/{print $7}')" -lt "${NEED_GB:-20}" ]; do sleep 30; done; }
 done_before() { grep -q "^$1 exit 0" "$SUM"; }
+held() { # a root on hold (hold.txt: the roots whose sessions wait for an adapter fix)
+  local root=${1##*-}
+  [ -f /srv/absolute/full/hold.txt ] && grep -qw -- "$root" /srv/absolute/full/hold.txt
+}
 step() { # name, args...
   local name=$1; shift
   done_before "$name" && { echo "$name done before"; return 0; }
+  held "$name" && { echo "$name held (hold.txt)"; return 0; }
   memwait
   local t0; t0=$(date +%s)
   sudo systemd-run --scope -p MemoryMax=$CAP -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
@@ -59,18 +68,18 @@ order() { # the roots of `dbn_views`, the ones named in FIRST (or the file first
 }
 dbn() {
   for r in $(dbn_views /srv/absolute/data/vendor/dbn/GLBX.MDP3 /srv/absolute/full/views-dbn | order); do
-    step "dbn-$r" --adapter databento --from "/srv/absolute/full/views-dbn/$r" --class future --undefined drop --report "$LOGS/dbn-$r-report.json"
+    step "dbn-$r" --adapter databento --from "/srv/absolute/full/views-dbn/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/dbn-$r-report.json"
   done
 }
 live() {
   for r in $(dbn_views /srv/absolute/data/vendor/dbn-live/GLBX.MDP3 /srv/absolute/full/views-live); do
     [ "$r" = SOL ] && [ -z "${SOL_FIXED:-}" ] && { echo "live-SOL deferred: the continuous series stops at its first roll (adapter fix pending)" | tee -a "$SUM"; continue; }
-    step "live-$r" --adapter databento --from "/srv/absolute/full/views-live/$r" --class future --undefined drop --report "$LOGS/live-$r-report.json"
+    step "live-$r" --adapter databento --from "/srv/absolute/full/views-live/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/live-$r-report.json"
   done
 }
 ifus() {
   for r in $(dbn_views /srv/absolute/data/vendor/dbn-ifus/IFUS.IMPACT /srv/absolute/full/views-ifus); do
-    step "ifus-$r" --adapter databento --from "/srv/absolute/full/views-ifus/$r" --class future --undefined drop --report "$LOGS/ifus-$r-report.json"
+    step "ifus-$r" --adapter databento --from "/srv/absolute/full/views-ifus/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/ifus-$r-report.json"
   done
 }
 bundles() { # bundle_v2 directories under /srv/absolute/full/bundles/<source>/<name>

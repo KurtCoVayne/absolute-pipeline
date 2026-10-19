@@ -5,10 +5,11 @@ up + down; sparse, additively back-adjusted) to bundle_v2 directories of
 the future class, one per root, under the source `tradestation` (docs/iterations/01-data.md).
 
 Each root becomes one continuous instrument whose ticker is `<CME root>.ts` (never colliding
-with Databento's `ES.v.0`): bars labelled at their minute's close in UTC, sessions as the
-Databento adapter cuts them (a gap over 45 minutes ends one; labelled at its last bar's close,
-opening at its first bar's start), point_value per session day from d20-research's contract
-specs. An hour the CT fall-back makes ambiguous is dropped (overnight minutes once a year).
+with Databento's `ES.v.0`): bars labelled at their minute's close in UTC, one session per CME
+trading day (the Globex day rolls at 17:00 CT: a bar ending after 17:00 CT belongs to the next
+day's session; labelled at its last bar's close, opening at its first bar's start), point_value
+per session day from d20-research's contract specs. A gap rule would merge the ES family's
+pre-2012 sessions, whose 30-minute break is shorter than any sensible gap. An hour the CT fall-back makes ambiguous is dropped (overnight minutes once a year).
 Usage: ts_to_bundle.py CACHE_DIR SPECS_DIR OUT_DIR [TICKER ...]"""
 import json
 import sys
@@ -29,7 +30,6 @@ TS_TO_ROOT = {
     "LBR": "LBR", "OJ": "OJ", "PA": "PA", "SR3": "SR3",
 }
 EXCLUDED = {"RA": "unidentified contract (d20-research's R25 registry excludes it)"}
-GAP = pd.Timedelta(minutes=45)
 NS = "datetime64[ns, UTC]"
 
 
@@ -59,12 +59,11 @@ def convert(raw: Path, ticker: str, root: str, bpv: float, out: Path) -> dict:
     df["t"] = pd.to_datetime(df["t"], utc=True)
     sym = f"{root}.ts"
     ident = f"ts:{root}"
-    # Sessions: a gap over 45 minutes between a bar's end and the next bar's start ends one.
+    # Sessions: the CME trading day, which rolls at 17:00 CT.
     start = df["t"] - pd.Timedelta(minutes=1)
-    new = (start - df["t"].shift(1)) > GAP
-    new.iloc[0] = True
-    sid = new.cumsum()
-    sess = df.assign(start=start, sid=sid).groupby("sid").agg(S=("t", "max"), Open=("start", "min"))
+    ct = df["t"].dt.tz_convert("America/Chicago")
+    tday = (ct + pd.Timedelta(hours=7)).dt.date
+    sess = df.assign(start=start, sid=tday).groupby("sid").agg(S=("t", "max"), Open=("start", "min"))
     days = sess["S"].dt.floor("D").drop_duplicates()
     d = out / root
     rel = []

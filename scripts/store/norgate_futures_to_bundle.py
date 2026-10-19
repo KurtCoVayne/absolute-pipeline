@@ -2,10 +2,11 @@
 """The Norgate lake's continuous back-adjusted futures (`&<ROOT>_CCB`, daily, from 1978) to one
 bundle_v2 directory of the future class under the source `norgate` (docs/iterations/01-data.md).
 
-Each series becomes a continuous instrument with the ticker `<ROOT>.ng` (never colliding with
-Databento's or TradeStation's): one bar per trade date labelled at 21:00 UTC (the vendor gives
-dates only; a session's close is approximated so, and its open 23 hours before), a session row
-per bar, and point_value per day from the root's latest contract in registry/futures_reference.
+Each series becomes a continuous instrument with the ticker `<ROOT>_N` (never colliding with
+Databento's `ES` or TradeStation's `ES.ts`): one bar per trade date labelled at 21:00 UTC (the
+vendor gives dates only; a session's close is approximated so, and its open 23 hours before), a
+session row per bar, and point_value and tick per day from the root's latest contract in
+registry/futures_reference (its point value and minimum move). The bundle's resolution is 1d.
 Usage: norgate_futures_to_bundle.py LAKE OUT_DIR"""
 import json
 import sys
@@ -39,7 +40,7 @@ t = t.sort_values(["asset_id", "date"]).drop_duplicates(["asset_id", "date"], ke
 t["T"] = t["date"] + pd.Timedelta(hours=21)
 t = t[t[["open", "high", "low", "close"]].notna().all(axis=1)]
 t["volume"] = t["volume"].fillna(0.0).astype(float)
-key = {a: f"ng:{r}" for a, r in zip(ccb.asset_id, ccb.root)}
+key = {a: f"n:{r}" for a, r in zip(ccb.asset_id, ccb.root)}
 t["A"] = t["asset_id"].map(key)
 d = out / "futures"
 rel = []
@@ -54,7 +55,7 @@ def part(name: str, frame: pd.DataFrame, cols: list[str], kinds: list) -> None:
     p = f"log/{name}/all.parquet"
     (d / p).parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(tbl, d / p, compression="zstd")
-    rel.append({"name": name, "signature": name, "resolution": "1m", "availability": "bar_close", "rows": tbl.num_rows, "partitions": [p]})
+    rel.append({"name": name, "signature": name, "resolution": "1d", "availability": "bar_close", "rows": tbl.num_rows, "partitions": [p]})
 
 
 for name in ("open", "high", "low", "close", "volume"):
@@ -65,17 +66,21 @@ part("session", sess.rename(columns={"T": "S"}), ["A", "S", "Open"], ["s", "t", 
 pvr = t[["A", "date"]].copy()
 pvr["V"] = t["asset_id"].map(dict(zip(ccb.asset_id, ccb.point_value))).astype(float)
 part("point_value", pvr.rename(columns={"date": "T"}), ["A", "T", "V"], ["s", "t", "f"])
+tkr = t[["A", "date"]].copy()
+tkr["V"] = t["asset_id"].map(dict(zip(ccb.asset_id, ccb.tick_size))).astype(float)
+tkr = tkr[tkr["V"].notna()]
+part("tick", tkr.rename(columns={"date": "T"}), ["A", "T", "V"], ["s", "t", "f"])
 first = t.groupby("A")["T"].min()
 sec = ccb.assign(id=ccb.asset_id.map(key))
 sec = sec[sec.id.isin(first.index)]
-pq.write_table(pa.table({"id": sec.id.tolist(), "ticker": (sec.root + ".ng").tolist(),
+pq.write_table(pa.table({"id": sec.id.tolist(), "ticker": (sec.root + "_N").tolist(),
                          "from": pa.array(first.loc[sec.id].values.astype("datetime64[ns]"), pa.timestamp("ns")),
                          "to": pa.array([None] * len(sec), pa.timestamp("ns")), "multiplier": sec.point_value.astype(float).tolist(),
                          "asset_class": ["future"] * len(sec)}), d / "securities.parquet")
-(d / "manifest.json").write_text(json.dumps({"format": 2, "name": "future", "version": "norgate-ccb-2026-10-19", "as_of": "2026-10-19", "processing_delay_seconds": 0,
+(d / "manifest.json").write_text(json.dumps({"format": 2, "name": "future", "version": "norgate-ccb-N-2026-10-19", "as_of": "2026-10-19", "processing_delay_seconds": 0,
                                              "source": "norgate", "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "relations": rel,
                                              "tests": {"converted_from": "norgate lake &<ROOT>_CCB series", "series": len(sec), "bars": len(t)}}, indent=1))
 report = {"series": len(sec), "bars": len(t), "first": str(t["T"].min()), "last": str(t["T"].max()), "missing_point_value": missing_pv,
-          "roots": {r: [str(first.get(f"ng:{r}")), float(p)] for r, p in zip(sec.root, sec.point_value)}}
+          "roots": {r: [str(first.get(f"n:{r}")), float(p)] for r, p in zip(sec.root, sec.point_value)}}
 (d / "report.json").write_text(json.dumps(report, indent=1))
 print(json.dumps({k: report[k] for k in ("series", "bars", "first", "last", "missing_point_value")}))

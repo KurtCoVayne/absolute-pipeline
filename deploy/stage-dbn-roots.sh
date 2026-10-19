@@ -24,7 +24,7 @@ for r in $roots; do
   mkdir -p "$VIEWS/$r/definition" "$VIEWS/$r/ohlcv-1m"
   ln -sfn "$V/definition/$r.parquet" "$VIEWS/$r/definition/$r.parquet"
   ln -sfn "$V/ohlcv-1m/$r.FUT" "$VIEWS/$r/ohlcv-1m/$r.FUT"
-  /usr/bin/time -v "${PRE[@]}" "$B/abt-data" ingest --store "$STORE" --adapter databento --from "$VIEWS/$r" --class future --undefined drop \
+  /usr/bin/time -v "${PRE[@]}" "$B/abt-data" ingest --store "$STORE" --adapter databento --from "$VIEWS/$r" --class future --undefined drop --session-break 17:45 --session-gap 20 \
     --report "$LOGS/$r-report.json" --measure > "$LOGS/$r-ingest.log" 2> "$LOGS/$r-time.log"
   code=$?
   echo "$r exit $code wall $(grep Elapsed "$LOGS/$r-time.log" | awk '{print $NF}') rss_kb $(grep 'Maximum resident' "$LOGS/$r-time.log" | awk '{print $NF}') $(date -u +%FT%TZ)" | tee -a "$LOGS/summary.log"
