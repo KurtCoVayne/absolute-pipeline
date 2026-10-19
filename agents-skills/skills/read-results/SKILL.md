@@ -15,7 +15,7 @@ What `plan_run`, `plan_report` and `query_run` give you and how to read them wit
             "reveal": [the out-of-sample outcome], "warnings": [...]}}
 ```
 
-- `decisions` per run step: **0 is a failure** (`abt-idioms` §6); a grid cell with 0 is a cell to explain.
+- `decisions` per run step: **0 is a failure** (`abt-idioms` §7); a grid cell with 0 is a cell to explain.
 - In-sample is the `base` outcome; out-of-sample is `reveal` (the trailing 20 %, revealed once); the grid's cells are the other outcomes.
 - `max_drawdown` is a share of the fixed 1,000,000 USD base; `cagr` and `total_return` are on that base (no compounding).
 

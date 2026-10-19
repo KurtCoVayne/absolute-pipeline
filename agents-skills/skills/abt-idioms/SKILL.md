@@ -1,6 +1,6 @@
 ---
 name: abt-idioms
-version: 2
+version: 3
 ---
 # abt idioms and pitfalls
 
@@ -32,7 +32,7 @@ report    { calendar session   periods 252 per year }
 - `PV > 0`: a root's point value can be 0 in the store; without the guard the run halts on a division by zero.
 - Sizing (house rules §3): `risk = 7500 USD`, `stop_ix = 2`; `hold(A, N)` is a target in contracts; `hold(A, 0 contracts)` closes.
 
-## 2. Intraday: the session so far at a decision minute (checked; run pending)
+## 2. Intraday: the session so far at a decision minute (checked and run: ES, July to August 2026, decides)
 
 "Three green 5-minute bars in the first 30 minutes": decide 30 minutes after each session's open, reading the session so far as cumulative intervals `[0min, M)` (an interval starting after `0min`, `session(X, [5min, 10min))`, panics the kernel today: use `[0min, M)` only):
 
@@ -58,7 +58,7 @@ report    { calendar es_days   periods 252 per year }
 
 A 5-minute bar's green test is its close above the previous 5-minute close (its open, up to the gap between prints): an approximation, stated as one. "A trend day up" then is the session's close above its open by k ATRs: `close@session(A, S, C), open@session …`; write the assumption.
 
-## 3. Swings, Fibonacci and a mechanical Elliott wave 2 (checked; unverified: a year of BTC decided nothing, under investigation)
+## 3. Swings, Fibonacci and a mechanical Elliott wave 2 (checked; pivots and swings verified on BTC, no wave-2 entry at impulse 4 over a year)
 
 Pivots are confirmed k sessions late (causal); the last swing is an `asof` read of the pivot relation, which binds when it happened:
 
@@ -77,24 +77,38 @@ wave2_buy(A, T, V) :- swing_high(A, T, H, TH), swing_low(A, T, L, TL), TL < TH, 
 
 Exits: the wave-1 low broken (`swing_low(A, T, L, _), close@session(A, T, P), P < L`) or a new pivot high. A Fibonacci level is `H - f * (H - L)` (up swing) or `L + f * (H - L)` (down swing). Elliott counts are not unique: always state the mechanical reading as an assumption and test it; it is never a reason for `not_testable`.
 
-## 4. Calendar rules (checked; unverified: six months of ES decided nothing, under investigation)
+## 4. Calendar rules: month boundaries, the Nth-last session, turn of month (checked and run: ES, 2026, decides monthly)
+
+**`month_start(T)` is never true on a `sessions` clock**: a program that counts from it decides nothing. Read month ends from a monthly calendar instead:
 
 ```
-rel mstart(@T)
-mstart(T) :- bar(T), month_start(T).                     # a derived relation over the builtin: closed, so it can be negated
+calendars { session = sessions   monthly = months(1) }
+rel mend(A: Future, @M: monthly)                         # each month's last bar
+mend(A, M) :- traded@monthly(A, M).
+rel first_of_month(A: Future, @T)                        # a month end fell after the previous session
+first_of_month(A, T) :- universe(A, T), prev_row(A, T, T0), mend(A, M) asof T, M < T, mend(A, M0) asof T0, M > M0.
+first_of_month(A, T) :- universe(A, T), prev_row(A, T, T0), mend(A, M0) asof T0, M0 = T0.
 rel msess(A: Future, @T, K: Count)                       # the session's number in its month, 1 at the first
-msess(A, T, 1) :- universe(A, T), mstart(T).
-msess(A, T, K) :- universe(A, T), not mstart(T), prev_row(A, T, T0), msess(A, T0, K0), K = K0 + 1.
-rel mlen_prev(A: Future, @T, M: Count)                   # last month's session count, carried through this month
-mlen_prev(A, T, M) :- universe(A, T), mstart(T), prev_row(A, T, T0), msess(A, T0, M).
-mlen_prev(A, T, M) :- universe(A, T), not mstart(T), prev_row(A, T, T0), mlen_prev(A, T0, M).
+msess(A, T, 1) :- first_of_month(A, T).
+msess(A, T, K) :- universe(A, T), not first_of_month(A, T), prev_row(A, T, T0), msess(A, T0, K0), K = K0 + 1.
+rel mlen_prev(A: Future, @T, N: Count)                   # last month's session count, carried through this month
+mlen_prev(A, T, N) :- first_of_month(A, T), prev_row(A, T, T0), msess(A, T0, N).
+mlen_prev(A, T, N) :- universe(A, T), not first_of_month(A, T), prev_row(A, T, T0), mlen_prev(A, T0, N).
 rel nth_last(A: Future, @T)                              # ASSUMPTION: this month has as many sessions as the last (±1-2)
-nth_last(A, T) :- msess(A, T, K), mlen_prev(A, T, M), K = M - nth + 1.
+nth_last(A, T) :- msess(A, T, K), mlen_prev(A, T, N), K = N - nth + 1.
 ```
 
-The store has no forward exchange calendar, so "the Nth-last session" is this labelled approximation; turn-of-month is `mstart` (the first session) and `nth_last` with `nth = 1`; hold for N sessions with `bars_held(A, T, B), B >= hold_n` (`uses state`). Day-of-week has no builtin: approximate a week's first session as the first after a gap of 2 days or more and say so.
+The store has no forward exchange calendar, so "the Nth-last session" is this labelled approximation; turn of month is `first_of_month` (or `nth_last` with `nth = 1` for the last session, approximated); hold N sessions with `bars_held(A, T, B), B >= hold_n` (`uses state`). Day-of-week has no builtin: approximate a week's first session as the first after a gap of 2 days or more and say so.
 
-## 5. Weekly averages on daily bars (checked; run pending)
+**One root of several** (a check or a sanity run): an instrument parameter compared with the entity, checked and run:
+
+```
+params   { only : Future = "ES" }
+universe { instruments { ES from <date>;  NQ from <date> }
+           universe(A, T) :- instruments(A, From), session(A, T, _), T >= From, A = only. }
+```
+
+## 5. Weekly averages on daily bars (checked)
 
 ```
 calendars { session = sessions   weekly = weeks(1) }
@@ -112,7 +126,32 @@ wwma(A, W, M) :- wnum(A, W, K), SW = sum(P * ((J - K + n) / n)) over (W1 in rows
 
 A 200-week average needs four years of warm-up: on this machine the window is at most three years, so say the average is shorter than the author's or use a weekly window that fits.
 
-## 6. Pitfalls that cost runs
+## 6. Actual contracts, spreads and ratios (checked)
+
+The store holds every contract's own bars as well as the back-adjusted root. The kernel's `contract(C, T, A, Expiry, PointValue)` names the contract `C` the root `A`'s continuous series holds at `T`; its own close is the actual (unadjusted) price. House rules §7: levels, spreads and ratios on actual contracts, P&L on the continuous roots.
+
+```
+rel actual_close(A: Future, @T, P: Price<USD>)       # the held contract's own close, on the root's session
+actual_close(A, T, P) :- universe(A, T), contract(C, T, A, _, _), P = last(P1) over (T1 in bucket(session, T), close(C, T1, P1)).
+```
+
+A 3:2:1 crack spread in USD per barrel (CL quotes USD/bbl; RB and HO USD/gal, 42 gal a barrel), traded on the continuous roots:
+
+```
+params { cl : Future = "CL"   rb : Future = "RB"   ho : Future = "HO"   w_cl : Scalar = 3   w_rb : Scalar = 2   w_ho : Scalar = 1   gal_bbl : Scalar = 42 … }
+rel crack(@T, S: Price<USD>)
+crack(T, S) :- actual_close(cl, T, Pc), actual_close(rb, T, Pr), actual_close(ho, T, Ph), S = (w_rb * gal_bbl * Pr + w_ho * gal_bbl * Ph - w_cl * Pc) / w_cl.
+rel crack_z(@T, Z: Scalar)
+crack_z(T, Z) :- crack(T, S), M = mean(X) over (T1 in rows[z_rows], crack(T1, X)), D = std(X) over (T1 in rows[z_rows], crack(T1, X)),
+    D > 0 USD/contract, Z = (S - M) / D.
+decide(T, hold(cl, Q)) :- crack_z(T, Z), Z > z_entry, Q = w_cl * combos * 1 contracts.     # long crude, short the products:
+decide(T, hold(rb, Q)) :- crack_z(T, Z), Z > z_entry, Q = -w_rb * combos * 1 contracts.    # selling a wide crack
+decide(T, hold(ho, Q)) :- crack_z(T, Z), Z > z_entry, Q = -w_ho * combos * 1 contracts.
+```
+
+Contract sizes (CL 1,000 bbl, RB and HO 42,000 gal) make 3:2:1 in contracts 3:2:1 in barrels. Roll yield is in the continuous P&L; the spread's level is on the actual contracts. "Actual contracts" is never a reason for `not_testable`.
+
+## 7. Pitfalls that cost runs
 
 - **`decisions = 0` is a failure.** After every `plan_run` read `runs[].decisions`; on 0, `query_run(run_id, "coverage over <window>")` names the empty relation. A wrong label, a window that never fills, a base case at the dataset's first bar.
 - **Grouping**: `rank`, `top[k]` and cross-sectional `count/sum/mean` take `within (T)`: the variables held fixed; the ones that vary are not in it.

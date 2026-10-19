@@ -1,6 +1,6 @@
 ---
 name: write-strategy
-version: 5
+version: 6
 ---
 # Write the strategy: the protocol as a loop
 
@@ -15,6 +15,7 @@ Tools: `read_document`, `catalog`, `schema`, `resolve_symbols`, `query`, `check`
 - **Memory**: name the roots in an `instruments { … }` table: the author's instruments when the idea names them, every staged root (`catalog("future")`) when it is about the house universe (house rules §6: the universe is the house list, not a subset); put `need bars @1m from <start less the warm-up>`; a run streams every minute bar from that date. Plans run one kernel each.
 - **Symbols**: `resolve_symbols` gives each root's query key and data-layer id; use the root's symbol in `instruments`, the key in `query`. ETFs and indexes map to futures: QQQ/NDX → NQ, SPY/SPX → ES, IWM → RTY, DIA → YM, GLD → GC, USO → CL, TLT → ZB, BTC → BTC, ETH → ETH, SOL → SOL. S&P 500 stocks are equities (Norgate, daily, since 2014).
 - **Execution**: `futures_house` (or `equities_house`); on a daily (session) clock `with { orders moo }` in a strategy named `<slug>_moo` (or `moc`), because `moo_moc` is intraday. Costs come from the preset: never `need commission`.
+- **Missing roots and actual contracts**: a root is missing (`no_data`) only after `catalog("future")` lists the staged roots and it is not among them. The store holds every contract's own bars beside the back-adjusted root: spreads, ratios and levels on actual contracts are `abt-idioms` §6, never `not_testable`.
 - **Data**: bars are reviewed `complete`; COT positioning, implied volatility, breadth, fundamentals and a forward exchange calendar are not in the store.
 
 ## Step 0 · The specification

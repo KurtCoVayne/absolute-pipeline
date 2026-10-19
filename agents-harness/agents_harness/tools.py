@@ -583,7 +583,7 @@ def end_refusal(ctx: Context, outcome: str) -> str | None:
             f"Refused: `could_not_check` needs at least {MIN_CHECKS_BEFORE_GIVING_UP} `check` calls and this job made {q.checks_used}. "
             "Write the program and check it; read every diagnostic and fix it. The language expresses intraday session windows "
             "(`abt-idioms` §2: decide at `session + 30min`, cumulative `close_at[M]` over `session(X, [0min, M))`), swings and "
-            "Fibonacci levels (§3), calendar counts (§4) and weekly averages (§5); a vague rule takes a labelled assumption (`write-strategy`, step 1)."
+            "Fibonacci levels (§3), calendar counts (§4), weekly averages (§5) and spreads on actual contracts (§6); a vague rule takes a labelled assumption (`write-strategy`, step 1)."
         )
     if outcome == "not_testable" and q.checks_used == 0 and (q.resolved or _roots_in_hypothesis(ctx)):
         roots = ", ".join(sorted(q.resolved or _roots_in_hypothesis(ctx)))
@@ -591,7 +591,7 @@ def end_refusal(ctx: Context, outcome: str) -> str | None:
             f"Refused: the idea's roots are in the store ({roots}) and no program was checked. `not_testable` is only for data the "
             "store cannot hold (positioning, implied volatility, breadth, fundamentals); a missing rule or a house-rule detail is a "
             "labelled assumption. Write the program from `abt-idioms` (§1 daily, §2 intraday session windows, §3 swings and "
-            "Fibonacci, §4 calendar counts) and `check` it."
+            "Fibonacci, §4 calendar counts, §6 actual contracts and spreads) and `check` it."
         )
     return None
 

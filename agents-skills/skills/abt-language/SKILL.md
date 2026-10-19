@@ -155,7 +155,7 @@ Read the real catalog of the store before writing (`schema`, `catalog`): lists, 
 
 ## 4. Complete programs
 
-`abt-idioms` §1 (daily futures) and §2 (intraday) are the checked skeletons; §3 to §5 add swings and Fibonacci, calendar counts and weekly averages. Start from one of them.
+`abt-idioms` §1 (daily futures) and §2 (intraday) are the checked skeletons; §3 to §6 add swings and Fibonacci, calendar counts, weekly averages and spreads on actual contracts. Start from one of them.
 
 ## 5. The checker's codes
 
