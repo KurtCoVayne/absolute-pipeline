@@ -149,7 +149,7 @@ Unless the hypothesis states others (**checked**: a plan without `after` claims 
 
 ```
 claims {
-  survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after
+  survives_costs : bootstrap_sharpe on returns of base expect interval > 0 at 0.05 after
   not_overfit    : pbo on grid sens expect statistic < 0.5 after
 }
 ```
@@ -278,7 +278,7 @@ study forward_<slug> {
   params     { <the submitted point> }
   holdout    after <H>
   budget     { money 0; bytes 2G; requests 0 }
-  claims     { survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after }
+  claims     { survives_costs : bootstrap_sharpe on returns of base expect interval > 0 at 0.05 after }
   steps      { run base; report main }
 }
 ```

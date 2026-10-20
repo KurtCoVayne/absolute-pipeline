@@ -46,7 +46,7 @@ study idea_<slug> {
   window     <the instruments' first bar + warm-up> .. <H verbatim>
   budget     { money 0; bytes 2G; requests 0 }
   objective  sharpe
-  claims     { survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after
+  claims     { survives_costs : bootstrap_sharpe on returns of base expect interval > 0 at 0.05 after
                not_overfit    : pbo on grid sens expect statistic < 0.5 after }
   steps      { run base   grid sens   reveal oos of base   report main }
   report     { metrics [return, volatility, sharpe, mar, max_drawdown, drawdown_duration, trades, profit_factor, hit_rate, avg_win_loss]; tables [surface, subperiods, contribution]; text }
