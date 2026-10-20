@@ -154,7 +154,7 @@ claims {
 }
 ```
 
-and the forward plan carries `survives_costs` alone, re-tested on every reveal over the forward window (Q-5.1), with the (in-sample, forward) verdict pair as the record. A pairs plan adds the `before` claims of section 7; an idea stated with a Sharpe adds `dsr on returns of base expect statistic > 0.95 after` with the lineage's count (Q-3.2). Profit factor, trade counts and concentration are red-flag rows (section 12), not claims, until tests for them exist in the starting set (Q-4.5).
+`interval > 0` holds when the whole bootstrap interval of the Sharpe lies above zero (E-112); `interval excludes 0` held for a reliably negative Sharpe too, and is not the claim (changed Oct 20, 2026). The forward plan carries `survives_costs` alone, re-tested on every reveal over the forward window (Q-5.1), with the (in-sample, forward) verdict pair as the record. A pairs plan adds the `before` claims of section 7; an idea stated with a Sharpe adds `dsr on returns of base expect statistic > 0.95 after` with the lineage's count (Q-3.2). Profit factor, trade counts and concentration are red-flag rows (section 12), not claims, until tests for them exist in the starting set (Q-4.5).
 
 ---
 

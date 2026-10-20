@@ -162,6 +162,7 @@ class LocalAbt:
         # Norgate's daily continuous futures (`<ROOT>_N`, one bar a session from each root's inception) on their own service.
         self.daily = os.environ.get("ABT_DATA_DAILY", "/srv/absolute/run/norgate-futures.sock")
         self.store = os.environ.get("ABT_STORE", "/srv/absolute/store")
+        self.daily_store = os.environ.get("ABT_STORE_DAILY", "/srv/absolute/store-norgate-futures")
         self.work = work or Path(os.environ.get("ABT_WORK", "/tmp/abt-work"))
         self.work.mkdir(parents=True, exist_ok=True)
         self.roots = [r for r in os.environ.get("ABT_ROOTS", "").split(",") if r]
@@ -206,8 +207,8 @@ class LocalAbt:
         p.write_text(text, encoding="utf-8")
         return p
 
-    def _query_store(self, text: str, max_rows: int = MAX_ROWS) -> dict[str, Any]:
-        r = self._abt(["data", "query", "--store", self.store, text], timeout=600)
+    def _query_store(self, text: str, max_rows: int = MAX_ROWS, store: str | None = None) -> dict[str, Any]:
+        r = self._abt(["data", "query", "--store", store or self.store, text], timeout=600)
         if r.returncode != 0:
             raise GatewayError("query", (r.stderr or r.stdout).strip()[:2000])
         return parse_table(r.stdout, max_rows)
@@ -227,7 +228,17 @@ class LocalAbt:
             out["roots"] = [self._root_entry(r) for r in roots] if value else [{"root": r, "abt_id": self._root_ids().get(r)} for r in roots]
             if value and not roots:
                 out["note"] = f"{value} is not a staged root; staged: {','.join(self.roots)}"
-            out["bars"] = "back-adjusted continuous series per root at @1m; daily views by `@session` on a `sessions` calendar"
+            out["bars"] = "back-adjusted continuous series per root at @1m from 2010-06-07 (intraday ideas); daily views by `@session` on a `sessions` calendar"
+            daily = [r for r in self.daily_roots() if not value or r in (value, f"{value}_N", f"{value}_U")]
+            out["daily_roots"] = daily
+            out["daily"] = (
+                "DAILY ideas use Norgate's continuous futures from each root's inception (1977 for the oldest; ES 1997): "
+                "`<ROOT>_N` back-adjusted (trade and size on it), `<ROOT>_U` unadjusted (levels and ratios) where listed; "
+                "one bar per session with point_value and tick; `universe { instruments { ES_N from <date> } }`, `need bars @1d`; "
+                "in a query `for n:ES` (the vendor key). The harness runs a program naming `_N` roots on that store."
+            )
+            if value and not roots and daily:
+                out["note"] = f"{value} is not in the minute store; daily: {', '.join(daily)}"
         elif cls == "equity":
             out["universe"] = 'Norgate: every S&P 500 member since 2014-01-01, as of each day (member(A, T, "SPX")), daily bars'
         return out
@@ -276,13 +287,30 @@ class LocalAbt:
         sigs = self._signatures(cls)
         return {"class": cls, "relations": sigs or [f"no catalog file for class {cls}"], "futures_roots_staged": self.roots if cls == "future" else None}
 
+    def daily_roots(self) -> list[str]:
+        """Norgate's daily continuous series in the daily store (`ES_N`, `ES_U`, …), from its ticker registry."""
+        if getattr(self, "_daily", None) is None:
+            try:
+                r = self._abt(["data", "query", "--store", self.daily_store, "ticker"], timeout=600)
+                self._daily: list[str] | None = sorted(set(re.findall(r"\b([A-Z][A-Z0-9]*_[NU])\b", r.stdout)))
+            except GatewayError:
+                self._daily = []
+        return self._daily or []
+
     def _r_resolve_symbols(self, body: dict[str, Any]) -> Any:
         out = []
+        daily = set(self.daily_roots())
         for s in body.get("symbols") or []:
             sym = str(s).upper().lstrip("$").replace("/", "")
             root = sym[:-1] if sym.endswith("1!") else sym
+            root = root[:-2] if root.endswith(("_N", "_U")) else root
+            d = {"daily": f"{root}_N", "daily_unadjusted": f"{root}_U" if f"{root}_U" in daily else None, "daily_query_key": f"n:{root}"} if f"{root}_N" in daily else {}
             if root in self.roots:
-                out.append({"symbol": s, "class": "future", "available": True, **self._root_entry(root)})
+                out.append({"symbol": s, "class": "future", "available": True, **self._root_entry(root), **d})
+                continue
+            if d:
+                out.append({"symbol": s, "class": "future", "available": True, "root": root, "minute_store": False, **d,
+                            "note": f"daily only: Norgate's {root}_N from the root's inception (no minute bars)"})
                 continue
             try:
                 t = self._query_store(f"ticker where symbol = {sym}", 5)

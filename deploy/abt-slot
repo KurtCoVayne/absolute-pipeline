@@ -15,9 +15,9 @@ export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-2}
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 ABT=/srv/absolute/absolute-backtest/target/release/abt
 mkdir -p /srv/absolute/locks
-# `abt check` reads no data and takes a second: it never waits for a slot.
-if [ "${1:-}" = check ]; then
-  exec systemd-run --user --scope --quiet -p MemoryMax=2G -p MemorySwapMax=0 choom -n 500 -- "$ABT" "$@"
+# `abt check` reads no data and `abt data query` one store's rows: neither waits for a slot.
+if [ "${1:-}" = check ] || { [ "${1:-}" = data ] && [ "${2:-}" = query ]; }; then
+  exec systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 choom -n 500 -- "$ABT" "$@"
 fi
 while true; do
   withhold=$(cat /srv/absolute/locks/reserve 2>/dev/null | tr -cd 0-9); withhold=${withhold:-0}
