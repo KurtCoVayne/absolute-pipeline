@@ -80,7 +80,7 @@ Your job admits `plan_runs` plan executions (4) and a grid of at most `grid_poin
 
 ## 6. The templates (house rules §15)
 
-Every plan's `window` ends at `H` verbatim and starts no earlier than three years before it; `holdout trailing:20%`; `budget { money 0 … }`. The development plan is `write-strategy` step 4. The translation check is the same program over the last months before `H`:
+Every plan's `window` ends at `H` verbatim and starts at the instruments' first bar plus the warm-up (as much history as the store holds); `holdout trailing:20%`; `budget { money 0 … }`. The development plan is `write-strategy` step 4. The translation check is the same program over the last months before `H`:
 
 ```
 study check_<slug> {

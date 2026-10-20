@@ -1,12 +1,15 @@
 # The analyst (PL-6.2, PL-6.5): a candidate document with its provenance closure in, zero to
 # three Hypothesis records out, each with the author's reported numbers.
-# knowledge_cutoff: May 18, 2026, as OpenAI's model page states it ("May 18, 2026 knowledge
+# The owner moved the analyst and the quant to the mid model on Oct 20, 2026 ("a better bigger
+# model"). knowledge_cutoff: Apr 30, 2026, as OpenAI's model page states it ("Apr 30, 2026 knowledge
+# cutoff", https://developers.openai.com/api/docs/models/gpt-6.1-sol, read on Oct 20, 2026); gpt-6-luna's
+# was May 18, 2026 ("May 18, 2026 knowledge
 # cutoff", https://developers.openai.com/api/docs/models/gpt-6-luna, read on Oct 19, 2026).
 
 [agent]
 name   = "analyst"
 stage  = "analyze"
-model  = { provider = "openai", id = "gpt-6-luna", knowledge_cutoff = "2026-05-18" }
+model  = { provider = "openai", id = "gpt-6.1-sol", knowledge_cutoff = "2026-04-30" }
 skills = ["house-rules", "content-is-data", "extract-hypothesis", "abt-plans-and-claims"]
 caps   = ["docs.read", "abt.catalog", "notes.write"]
 
@@ -15,7 +18,7 @@ tokens_in = 400_000         # images are resent each turn (cached); money_usd is
 tokens_out = 12_000
 tool_calls = 20
 wall_s = 180
-money_usd = 0.05
+money_usd = 0.50
 
 [output]
 records = ["Hypothesis"]

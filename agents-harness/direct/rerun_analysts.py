@@ -52,6 +52,7 @@ PY = str(S / "venv" / "bin" / "python")
 SEED = S / "data" / "seed"
 ABT = str(S / "absolute-backtest" / "target" / "release" / "abt")
 STORE = str(S / "store")
+NORGATE_FUTURES = "/srv/absolute/store-norgate-futures"
 USER_AGENT = "absolute-pipeline/0.1 (research, read-only)"
 MAX_LINK_BYTES = 2 * 1024 * 1024
 MAX_LINK_CHARS = 40_000
@@ -168,7 +169,11 @@ def render_data_map(roots: list[tuple[str, str]], *, equity_span: str = "2014-01
 def build_data_map(h: str) -> tuple[str, list[str]]:
     q = lambda text: subprocess.run([ABT, "data", "query", "--store", STORE, text], capture_output=True, text=True, cwd="/tmp", timeout=600).stdout  # noqa: E731
     roots = roots_from_rows(parse_rows(q(f"continuous latest at {h}")), parse_rows(q("ticker")))
-    return render_data_map(roots), [r[0] for r in roots]
+    # Norgate's daily continuous futures, one bar a session from each root's inception (served apart).
+    n = subprocess.run([ABT, "data", "query", "--store", NORGATE_FUTURES, "ticker"], capture_output=True, text=True, cwd="/tmp", timeout=600).stdout
+    daily = sorted(set(re.findall(r"\b([A-Z][A-Z0-9]*_N)\b", n)))
+    extra = f"\nDaily futures (Norgate, one bar a session from each root's inception, as early as 1977): {', '.join(daily)}. A daily idea on any of these markets is testable.\n" if daily else ""
+    return render_data_map(roots) + extra, [r[0] for r in roots]
 
 
 # ---------------------------------------------------------------- images

@@ -1,13 +1,16 @@
 # The quant (PL-6.2, PL-6.5): one Hypothesis with its documents in, one Submission out (or a
 # reasoned failure). The small model by the owner's rule; the quant moves to the mid model
 # (gpt-6.1-sol, money_usd = 2.00) only if GP-5's task fails on the small one.
-# knowledge_cutoff: May 18, 2026, as OpenAI's model page states it ("May 18, 2026 knowledge
+# The owner moved the analyst and the quant to the mid model on Oct 20, 2026 ("a better bigger
+# model"). knowledge_cutoff: Apr 30, 2026, as OpenAI's model page states it ("Apr 30, 2026 knowledge
+# cutoff", https://developers.openai.com/api/docs/models/gpt-6.1-sol, read on Oct 20, 2026); gpt-6-luna's
+# was May 18, 2026 ("May 18, 2026 knowledge
 # cutoff", https://developers.openai.com/api/docs/models/gpt-6-luna, read on Oct 19, 2026).
 
 [agent]
 name   = "quant"
 stage  = "strategize"
-model  = { provider = "openai", id = "gpt-6-luna", knowledge_cutoff = "2026-05-18" }
+model  = { provider = "openai", id = "gpt-6.1-sol", knowledge_cutoff = "2026-04-30" }
 skills = ["house-rules", "content-is-data", "abt-language", "abt-idioms", "abt-plans-and-claims", "write-strategy", "read-results"]
 caps   = ["docs.read", "abt.catalog", "abt.query", "abt.check", "abt.plan", "abt.report", "abt.query_run", "abt.submit", "notes.write"]
 
@@ -16,7 +19,7 @@ tokens_in = 1_500_000   # weighted: uncached input in full, cached input at a te
 tokens_out = 60_000
 tool_calls = 100
 wall_s = 7200           # until daily programs bind the daily level: a house-universe plan streams 34 roots of minute bars and takes over an hour; money_usd stays the binding cap
-money_usd = 0.25
+money_usd = 2.00
 plan_runs   = 4          # plan executions the gateway admits in this job: the translation check, the development plan, one retry or one execution-variant plan, and the forward plan's check
 grid_points = 25         # the sensitivity grid's size
 checks      = 8          # abt check iterations before the job fails as could_not_check

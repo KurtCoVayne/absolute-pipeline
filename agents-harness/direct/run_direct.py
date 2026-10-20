@@ -220,9 +220,10 @@ def run_quant(jd: Path, roots: list[str], key: str, wall_s: float) -> int | None
             "JOB_DIR": str(jd),
             "ABT_LOCAL": "1",
             "ABT_ROOTS": ",".join(roots),
-            "ABT_BIN": ABT,
+            "ABT_BIN": "/usr/local/bin/abt-slot",  # the machine's shared, memory-capped slots
             "ABT_STORE": STORE,
             "ABT_DATA": str(S / "run" / "data.sock"),
+            "ABT_DATA_DAILY": str(S / "run" / "norgate-futures.sock"),
             "OPENAI_API_KEY": key,
             "OPENAI_BASE_URL": "https://api.openai.com/v1",
             "PIPELINE_JOB_ID": jd.name,

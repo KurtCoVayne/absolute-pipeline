@@ -1,6 +1,6 @@
 ---
 name: write-strategy
-version: 6
+version: 7
 ---
 # Write the strategy: the protocol as a loop
 
@@ -10,10 +10,11 @@ Tools: `read_document`, `catalog`, `schema`, `resolve_symbols`, `query`, `check`
 
 ## Fixed limits on this machine (read first; a plan that breaks one is refused)
 
-- **Window**: `window <start> .. <H>` with `<start>` no earlier than 3 years before `H`; `holdout trailing:20%`; `budget { money 0; bytes 2G; requests 0 }`.
-- **A house-rule detail the store cannot compute is an assumption, never a stop.** The futures catalog has `point_value` but no tick size, so the sizing floor `max(ATR20, 10 × tick)` becomes `ATR20` alone: write it so and name it in the rationale's assumptions. The same for any other detail of house rules §3 or §4 the store lacks: apply the rest of the rule, label the gap, and test. `not_testable` is only for the idea's own inputs missing from the store.
-- **Memory**: name the roots in an `instruments { … }` table: the author's instruments when the idea names them, every staged root (`catalog("future")`) when it is about the house universe (house rules §6: the universe is the house list, not a subset); put `need bars @1m from <start less the warm-up>`; a run streams every minute bar from that date. Plans run one kernel each.
-- **Symbols**: `resolve_symbols` gives each root's query key and data-layer id; use the root's symbol in `instruments`, the key in `query`. ETFs and indexes map to futures: QQQ/NDX → NQ, SPY/SPX → ES, IWM → RTY, DIA → YM, GLD → GC, USO → CL, TLT → ZB, BTC → BTC, ETH → ETH, SOL → SOL. S&P 500 stocks are equities (Norgate, daily, since 2014).
+- **Window**: `window <start> .. <H>` with `<start>` the earliest bar the store holds for your instruments plus the warm-up the rules need: as much history as there is, never a shorter span to save time (the owner's rule); `holdout trailing:20%`; `budget { money 0; bytes 2G; requests 0 }`.
+- **Daily futures read Norgate**: an idea on daily bars runs on Norgate's continuous futures: symbols `<ROOT>_N` (ES_N from 1997-09-09, NQ_N 1999, CL_N 1983, GC_N 1978, ZN_N 1982, ZB_N, RTY_N, RB_N, HO_N … 112 roots, each from its inception), one bar per session, with `point_value` and `tick` (so the sizing floor `max(ATR20, 10 × tick)` applies in full); `universe { instruments { ES_N from <date> } }`, `need bars @1d from <date>`; the harness sends a program naming `_N` roots to that store. A daily run over 30 years takes under a minute. The minute store (`ES`, `NQ` … from 2010-06-07) is for intraday ideas only.
+- **A house-rule detail the store cannot compute is an assumption, never a stop.** The minute store's futures have `point_value` but no tick size, so there the sizing floor `max(ATR20, 10 × tick)` becomes `ATR20` alone: write it so and name it in the rationale's assumptions (the Norgate daily store has `tick`). The same for any other detail of house rules §3 or §4 the store lacks: apply the rest of the rule, label the gap, and test. `not_testable` is only for the idea's own inputs missing from the store.
+- **Memory**: name the roots in an `instruments { … }` table: the author's instruments when the idea names them, every liquid root when it is about the house universe (house rules §6: the universe is the house list, not a subset); an intraday program puts `need bars @1m from <start less the warm-up>` (a run streams every minute bar from that date), a daily one `need bars @1d`.
+- **Symbols**: `resolve_symbols` gives each root's query key and data-layer id; use the root's symbol in `instruments`, the key in `query`. ETFs and indexes map to futures: QQQ/NDX → NQ, SPY/SPX → ES, IWM → RTY, DIA → YM, GLD → GC, USO → CL, TLT → ZB, BTC → BTC, ETH → ETH, SOL → SOL. S&P 500 stocks are equities (Norgate, daily, since 2014; the full US lists from 1990 are being added).
 - **Execution**: `futures_house` (or `equities_house`); on a daily (session) clock `with { orders moo }` in a strategy named `<slug>_moo` (or `moc`), because `moo_moc` is intraday. Costs come from the preset: never `need commission`.
 - **Missing roots and actual contracts**: a root is missing (`no_data`) only after `catalog("future")` lists the staged roots and it is not among them. The store holds every contract's own bars beside the back-adjusted root: spreads, ratios and levels on actual contracts are `abt-idioms` §6, never `not_testable`.
 - **Data**: bars are reviewed `complete`; COT positioning, implied volatility, breadth, fundamentals and a forward exchange calendar are not in the store.
@@ -42,7 +43,7 @@ study idea_<slug> {
   params     { <the author's point> }
   grid       { <p1> = a, b, c; <p2> = d, e, f }        # ≤ 25 cells, the author's point inside
   holdout    trailing:20%
-  window     <H − 3 years or later> .. <H verbatim>
+  window     <the instruments' first bar + warm-up> .. <H verbatim>
   budget     { money 0; bytes 2G; requests 0 }
   objective  sharpe
   claims     { survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after

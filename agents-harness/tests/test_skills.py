@@ -32,10 +32,11 @@ def test_the_nine_skills_exist_with_front_matter() -> None:
 
 
 def test_every_definition_is_inside_the_closed_set() -> None:
-    for agent in ("triage", "analyst", "quant"):
+    # The small model for triage; the analyst and the quant on the mid model since the owner's Oct 20 call.
+    for agent, model in (("triage", "gpt-6-luna"), ("analyst", "gpt-6.1-sol"), ("quant", "gpt-6.1-sol")):
         d = load_definition(SKILLS_ROOT / "definitions" / f"{agent}.toml")
         assert set(d.caps) <= CLOSED_CAPS
-        assert d.model.id == "gpt-6-luna" and d.model.provider == "openai"
+        assert d.model.id == model and d.model.provider == "openai"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.model.knowledge_cutoff)
         assert all(s in NINE for s in d.skills)
         assert d.skills[0] == "house-rules" and "content-is-data" in d.skills
@@ -49,9 +50,9 @@ def test_caps_and_budgets_are_the_plans() -> None:
     analyst = load_definition(SKILLS_ROOT / "definitions" / "analyst.toml")
     quant = load_definition(SKILLS_ROOT / "definitions" / "quant.toml")
     assert triage.caps == ("docs.read", "notes.write") and triage.budget["money_usd"] <= 0.002
-    assert analyst.caps == ("docs.read", "abt.catalog", "notes.write") and analyst.budget["money_usd"] <= 0.05
+    assert analyst.caps == ("docs.read", "abt.catalog", "notes.write") and analyst.budget["money_usd"] <= 0.50
     assert quant.caps == ("docs.read", "abt.catalog", "abt.query", "abt.check", "abt.plan", "abt.report", "abt.query_run", "abt.submit", "notes.write")
-    assert quant.budget["money_usd"] <= 0.25 and quant.budget["plan_runs"] == 4 and quant.budget["grid_points"] == 25 and quant.budget["checks"] == 8
+    assert quant.budget["money_usd"] <= 2.00 and quant.budget["plan_runs"] == 4 and quant.budget["grid_points"] == 25 and quant.budget["checks"] == 8
     assert triage.records == ("Triage",) and analyst.records == ("Hypothesis",) and quant.records == ("Submission",)
     assert "provenance.write" not in CLOSED_CAPS
 

@@ -57,7 +57,7 @@ def test_full_protocol_ends_in_a_submission(tmp_path: Path, fake_openai, fake_ga
     assert json.loads(record["insample"])["decisions"] == {"sanity": 37, "base": 37, "long_only": 37}
     assert record["trials_used"] == 34
     assert record["rationale"] == RATIONALE
-    assert record["agent"] == "quant" and record["model"] == "gpt-6-luna" and len(record["skills_hash"]) == 64
+    assert record["agent"] == "quant" and record["model"] == "gpt-6.1-sol" and len(record["skills_hash"]) == 64
     assert record["campaign"] == "test"
     routes = fake_gateway.routes_called()
     # The first turn's three calls run in parallel, in no fixed order.

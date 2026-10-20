@@ -5,12 +5,12 @@ shapes (contracts section 5), each answered by the `abt` command line.
 
 Two rules survive the cut and are enforced here before `abt` sees a plan: the
 plan's `window` ends at the job's H with `holdout trailing:20%`, and its
-`budget` is `money 0`. A third keeps the runs inside the machine's means: the
-window starts no earlier than three years before H (a futures run streams every
-staged root's minute bars). Data queries read `r <= H`.
+`budget` is `money 0`. The window's start is never limited (the owner: as much
+history as the store holds). Data queries read `r <= H`.
 
 Environment: `ABT_BIN` (the `abt` binary), `ABT_LIB` (the library sources, a
 glob or a space-separated list), `ABT_DATA` (the data service's socket),
+`ABT_DATA_DAILY` (Norgate's daily continuous futures, for programs on `<ROOT>_N`),
 `ABT_STORE` (the store, read-only reads), `ABT_WORK` (where programs, plans and
 answers are written), `ABT_ROOTS` (the futures roots staged, comma-separated).
 """
@@ -31,12 +31,12 @@ from .gateway import GatewayError
 
 MAX_ROWS = 500
 MAX_TEXT = 8_000
-WINDOW_YEARS = 3
 _WINDOW = re.compile(r"^(\s*window\s+)(\S+)(\s*\.\.\s*)(\S+)", re.M)
 _HOLDOUT = re.compile(r"^\s*holdout\s+(\S+)", re.M)
 _BUDGET = re.compile(r"^\s*budget\s*\{([^}]*)\}", re.M)
 _PROGRAM = re.compile(r"^\s*program\s+(\S+)", re.M)
 _STRATEGY = re.compile(r"^\s*strategy\s+([A-Za-z_][A-Za-z0-9_]*)", re.M)
+_NORGATE_ROOT = re.compile(r"\b[A-Z][A-Z0-9]*_N\b")
 _DIAG = re.compile(r"^(error|warning)\s+\[([A-Za-z0-9-]+)\]\s+(.*)$")
 
 
@@ -159,6 +159,8 @@ class LocalAbt:
         lib = os.environ.get("ABT_LIB", "/srv/absolute/absolute-backtest/corpus-v2/catalog/*.dsl /srv/absolute/absolute-backtest/corpus-v2/lib/*.dsl")
         self.lib: list[str] = sorted(p for pat in lib.split() for p in glob.glob(pat))
         self.data = os.environ.get("ABT_DATA", "/srv/absolute/run/data.sock")
+        # Norgate's daily continuous futures (`<ROOT>_N`, one bar a session from each root's inception) on their own service.
+        self.daily = os.environ.get("ABT_DATA_DAILY", "/srv/absolute/run/norgate-futures.sock")
         self.store = os.environ.get("ABT_STORE", "/srv/absolute/store")
         self.work = work or Path(os.environ.get("ABT_WORK", "/tmp/abt-work"))
         self.work.mkdir(parents=True, exist_ok=True)
@@ -384,10 +386,7 @@ class LocalAbt:
 
     def guard_plan(self, plan: str, programs: dict[str, str] | None = None) -> str:
         """The rules that survive the cut; the plan's text, unchanged, when it passes. The window's
-        start is limited to three years before H only while a run streams minute bars: always for a
-        program that reads them directly (an intraday clock or session interval), and for every
-        futures program until the daily-level binding lands (`ABT_DAILY_BINDING=1` lifts it for
-        the daily ones, which then run the store's whole span)."""
+        start is never limited: the owner's rule is as much history as the store holds (Oct 19)."""
         w = _WINDOW.search(plan)
         if not w:
             raise GatewayError("holdout", f"a plan writes `window <start> .. {self.h_text}` (the window ends at H)")
@@ -402,14 +401,6 @@ class LocalAbt:
             start_dt = _parse_time(w.group(2))
         except ValueError as e:
             raise GatewayError("window", f"the window's start `{w.group(2)}` is not a date") from e
-        earliest = self.h - timedelta(days=365 * WINDOW_YEARS + 1)
-        limited = os.environ.get("ABT_DAILY_BINDING") != "1" or any(reads_minutes(t) for t in (programs or {}).values())
-        if limited and start_dt < earliest:
-            raise GatewayError(
-                "window",
-                f"the window starts no earlier than {WINDOW_YEARS} years before H on this machine (a futures run streams every staged root's minute bars; "
-                f"one run over eight years took six minutes): write `window {earliest.date().isoformat()} .. {self.h_text}` or later",
-            )
         h = _HOLDOUT.search(plan)
         if not h or h.group(1) != "trailing:20%":
             raise GatewayError("holdout", "the development plan's hold-out is `holdout trailing:20%`")
@@ -417,6 +408,11 @@ class LocalAbt:
         if not b or not re.search(r"\bmoney\s+0\b(?![.\d])", b.group(1)):
             raise GatewayError("budget", "the plan's budget is `budget { money 0; bytes 2G; requests 0 }`: no data is bought")
         return plan
+
+    def _data_for(self, programs: Any) -> str:
+        """The daily store's socket for a program on Norgate roots (`ES_N`), else the minute store's."""
+        texts = programs.values() if isinstance(programs, dict) else [str(programs)]
+        return self.daily if any(_NORGATE_ROOT.search(str(t)) for t in texts) else self.data
 
     def _plan_files(self, body: dict[str, Any]) -> tuple[Path, list[str], str]:
         programs = {str(k): str(v) for k, v in (body.get("programs") or {}).items()}
@@ -429,7 +425,7 @@ class LocalAbt:
 
     def _r_plan_check(self, body: dict[str, Any]) -> Any:
         path, files, _ = self._plan_files(body)
-        r = self._abt(["plan", "check", str(path), *files, *self.lib, "--data", self.data, "--json"], timeout=900)
+        r = self._abt(["plan", "check", str(path), *files, *self.lib, "--data", self._data_for(body.get("programs") or {}), "--json"], timeout=900)
         if r.returncode != 0:
             raise GatewayError("plan", (r.stderr or r.stdout).strip()[-3000:])
         try:
@@ -440,7 +436,7 @@ class LocalAbt:
     def _r_plan_run(self, body: dict[str, Any]) -> Any:
         path, files, study = self._plan_files(body)
         kernels = "2" if available_gb() >= 24 else "1"  # grid points in parallel only with room for two bindings
-        r = self._abt(["plan", "run", str(path), *files, *self.lib, "--data", self.data, "--kernels", kernels, "--json"], timeout=3000)
+        r = self._abt(["plan", "run", str(path), *files, *self.lib, "--data", self._data_for(body.get("programs") or {}), "--kernels", kernels, "--json"], timeout=3000)
         if r.returncode != 0:
             raise GatewayError("plan", failure_text(r, "abt plan run"))
         run = json.loads(r.stdout)
@@ -448,7 +444,7 @@ class LocalAbt:
         reveal = None
         steps = re.findall(r"^\s*reveal\s+(\w+)\s+of", str(body.get("plan") or ""), re.M)
         for step in steps[:1]:
-            rv = self._abt(["plan", "reveal", str(path), step, *files, *self.lib, "--data", self.data, "--kernels", "1", "--json"], timeout=3000)
+            rv = self._abt(["plan", "reveal", str(path), step, *files, *self.lib, "--data", self._data_for(body.get("programs") or {}), "--kernels", "1", "--json"], timeout=3000)
             if rv.returncode == 0:
                 try:
                     reveal = json.loads(rv.stdout)
@@ -572,7 +568,7 @@ class LocalAbt:
         # The step's own `over D1 .. D2`, up to the next step on the same line.
         over = re.search(rf"\brun\s+{re.escape(step)}\b(?:(?!\b(?:run|grid|reveal|report|compare|walk_forward)\b)[^\n])*?\bover\s+(\S+)\s*\.\.\s*(\S+)", plan) if step else None
         start, end = (over.group(1), over.group(2)) if over else ((m.group(1), m.group(2)) if m else ("", self.h_text))
-        args = ["query", "--strategy", name, "--data", self.data]
+        args = ["query", "--strategy", name, "--data", self._data_for(program)]
         if start:
             args += ["--start", start[:10]]
         args += ["--end", (end or self.h_text)[:10]]

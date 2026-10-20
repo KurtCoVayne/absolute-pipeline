@@ -26,7 +26,7 @@ class Rate:
 # PL-8.5's rate card as reported on Oct 7, 2026: cached input at a tenth.
 RATE_CARD: dict[str, Rate] = {
     "gpt-6-luna": Rate(input=0.10, cached=0.01, output=0.50),
-    "gpt-6.1-sol": Rate(input=2.00, cached=0.20, output=10.00),
+    "gpt-6.1-sol": Rate(input=2.00, cached=0.10, output=10.00),  # OpenAI's model page, read Oct 20, 2026
 }
 
 

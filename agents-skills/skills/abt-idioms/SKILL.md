@@ -124,7 +124,7 @@ wwma(A, W, M) :- wnum(A, W, K), SW = sum(P * ((J - K + n) / n)) over (W1 in rows
 # read at a session: wwma(A, W, M) asof T
 ```
 
-A 200-week average needs four years of warm-up: on this machine the window is at most three years, so say the average is shorter than the author's or use a weekly window that fits.
+A 200-week average needs four years of warm-up: start the data four years before the window (Norgate's daily roots go back decades; BTC on the minute store starts 2017-12-18, so its first four years are warm-up).
 
 ## 6. Actual contracts, spreads and ratios (checked)
 

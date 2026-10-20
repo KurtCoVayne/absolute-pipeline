@@ -54,7 +54,7 @@ def test_query_run_reruns_the_runs_program_at_its_point_over_its_window(tmp_path
     assert calls[-1][calls[-1].index("--start") + 1] == "2025-01-02"
 
 
-def test_the_three_year_window_binds_only_programs_that_read_minutes(tmp_path: Path, monkeypatch: Any) -> None:
+def test_no_window_cap_and_daily_programs_read_the_norgate_store(tmp_path: Path, monkeypatch: Any) -> None:
     from agents_harness.gateway import GatewayError
     from agents_harness.local import reads_minutes
 
@@ -66,16 +66,8 @@ def test_the_three_year_window_binds_only_programs_that_read_minutes(tmp_path: P
     monkeypatch.setattr(local.glob, "glob", lambda pat: [])
     b = LocalAbt(h="2026-09-19T17:55:02Z", work=tmp_path)
     plan = "study idea_d {\n  window 2010-06-07 .. 2026-09-19T17:55:02Z\n  holdout trailing:20%\n  budget { money 0; bytes 2G; requests 0 }\n}\n"
-    monkeypatch.delenv("ABT_DAILY_BINDING", raising=False)
-    try:
-        b.guard_plan(plan, {"d_moo.dsl": daily})
-        raise AssertionError("the 3-year window should bind before the daily binding lands")
-    except GatewayError as e:
-        assert e.code == "window"
-    monkeypatch.setenv("ABT_DAILY_BINDING", "1")
+    # The owner's rule: as much history as the store holds, daily or intraday.
     assert b.guard_plan(plan, {"d_moo.dsl": daily}) == plan
-    try:
-        b.guard_plan(plan, {"i.dsl": intraday})
-        raise AssertionError("an intraday program keeps the 3-year window")
-    except GatewayError as e:
-        assert e.code == "window"
+    assert b.guard_plan(plan, {"i.dsl": intraday}) == plan
+    assert b._data_for({"d_moo.dsl": "strategy d_moo { universe { instruments { ES_N from 1997-09-09 } } }"}) == b.daily
+    assert b._data_for({"d_moo.dsl": daily}) == b.data
