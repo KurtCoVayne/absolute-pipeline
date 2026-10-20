@@ -339,12 +339,13 @@ def collect(post: dict[str, str], d: Path, jd: Path, hyp: dict[str, Any], h: str
 
 
 def spent_so_far() -> float:
+    """Every OpenAI dollar recorded: the queue's jobs, and every job under direct/ (quant and analyst
+    jobs, and those set aside in the attic: a requeue must not hide money already spent)."""
     base = sum(float(j.get("cost_usd") or 0) for j in jsonl(QUEUE / "jobs.jsonl"))
     direct = 0.0
-    if JOBS.exists():
-        for jd in JOBS.iterdir():
-            c = load(jd / "out" / "cost.json") or {}
-            direct += float(c.get("money_usd") or 0)
+    for f in (S / "direct").rglob("cost.json"):
+        c = load(f) or {}
+        direct += float(c.get("money_usd") or 0)
     return base + direct
 
 

@@ -348,13 +348,10 @@ def _linked(doc: dict[str, Any], url: str, got: str, via: str, cost: float) -> d
 
 
 def spent_openai() -> float:
-    seen: set[Path] = set()
+    """Every OpenAI dollar recorded (the queue's jobs and every job under direct/, the attic included)."""
     total = sum(float(j.get("cost_usd") or 0) for j in jsonl(QUEUE / "jobs.jsonl"))
-    for jd in (S / "direct" / "jobs").glob("*"):
-        rp = jd.resolve()
-        if rp not in seen:
-            seen.add(rp)
-            total += float((load(jd / "out" / "cost.json") or {}).get("money_usd") or 0)
+    for f in (S / "direct").rglob("cost.json"):
+        total += float((load(f) or {}).get("money_usd") or 0)
     return total
 
 
