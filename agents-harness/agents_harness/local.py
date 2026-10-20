@@ -624,13 +624,53 @@ class LocalAbt:
         args += ["--end", (end or self.h_text)[:10]]
         for k, v in run.get("point") or []:
             args += ["--param", f"{k}={v}"]
-        for q in [t.strip() for t in text.split(";;") if t.strip()][:6]:
+        queries = [t.strip() for t in text.split(";;") if t.strip()][:6]
+        # `ledger R` (no `into`): the relation's rows at every bar, through `abt run --ledger` (the kernel's
+        # `ledger R into NAME` writes to the store and returns nothing): the fills a hand recomputation needs.
+        ledgers = [mm.group(1) for q in queries if (mm := re.fullmatch(r"ledger\s+([A-Za-z_]\w*)", q))]
+        queries = [q for q in queries if not re.fullmatch(r"ledger\s+[A-Za-z_]\w*", q)]
+        out_text = []
+        if ledgers:
+            out_text.append(self._ledgers(name, program, files, start, end or self.h_text, run.get("point") or [], ledgers))
+        if not queries:
+            return {"run_id": run_id, "window": f"{start} .. {end}", "point": run.get("point"), "text": "\n".join(out_text)[:MAX_TEXT]}
+        for q in queries:
             args += ["--text", q]
         r = self._abt([*args, *self.lib, *files], timeout=1200)
         if r.returncode != 0:
             raise GatewayError("query_run", failure_text(r, "abt query"))
         lines = [ln for ln in r.stdout.splitlines() if not ln.startswith("warning [W")]
-        return {"run_id": run_id, "window": f"{start} .. {end}", "point": run.get("point"), "text": "\n".join(lines)[:MAX_TEXT]}
+        return {"run_id": run_id, "window": f"{start} .. {end}", "point": run.get("point"), "text": "\n".join([*out_text, *lines])[:MAX_TEXT]}
+
+    def _ledgers(self, name: str, program: str, files: list[str], start: str, end: str, point: Any, rels: list[str]) -> str:
+        """The named relations' rows over the run's window, as text tables (at most MAX_ROWS each)."""
+        out = self.work / f"ledger-{hashlib.blake2b('|'.join([name, start, end, *rels]).encode(), digest_size=6).hexdigest()}"
+        args = ["run", "--strategy", name, "--data", self._data_for(program), "--quiet"]
+        if start:
+            args += ["--start", start[:10]]
+        args += ["--end", end[:10]]
+        for k, v in point:
+            args += ["--param", f"{k}={v}"]
+        args += ["--ledger", ",".join(rels), "--ledger-out", str(out)]
+        r = self._abt([*args, *self.lib, *files], timeout=1200)
+        if r.returncode != 0:
+            raise GatewayError("query_run", failure_text(r, "abt run --ledger"))
+        import pyarrow.parquet as pq  # the harness image carries pyarrow
+
+        texts = []
+        for rel in rels:
+            paths = sorted(out.rglob(f"*{rel}*.parquet")) or sorted(out.rglob("*.parquet"))
+            rows: list[str] = []
+            header = ""
+            for path in paths:
+                t = pq.read_table(path)
+                header = " | ".join(t.column_names)
+                for row in t.slice(0, MAX_ROWS - len(rows)).to_pylist():
+                    rows.append(" | ".join(str(v) for v in row.values()))
+                if len(rows) >= MAX_ROWS:
+                    break
+            texts.append(f"ledger {rel}: {len(rows)} rows\n{header}\n" + "\n".join(rows) if rows else f"ledger {rel}: no rows over {start} .. {end}")
+        return "\n\n".join(texts)
 
     def _r_submit(self, body: dict[str, Any]) -> Any:
         sid = hashlib.blake2b(json.dumps(body, sort_keys=True, default=str).encode("utf-8"), digest_size=32).hexdigest()

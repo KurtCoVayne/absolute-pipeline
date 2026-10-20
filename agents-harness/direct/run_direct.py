@@ -33,8 +33,10 @@ from typing import Any
 
 S = Path("/srv/absolute")
 QUEUE = S / "queue"
-OUT = S / "direct" / "out"
-JOBS = S / "direct" / "jobs"
+# A side run (an A/B against earlier results) writes elsewhere so the site's pages are untouched; its
+# jobs stay under direct/ so the OpenAI guard counts them.
+OUT = Path(os.environ.get("DIRECT_OUT", str(S / "direct" / "out")))
+JOBS = Path(os.environ.get("DIRECT_JOBS", str(S / "direct" / "jobs")))
 P = S / "absolute-pipeline"
 SKILLS = P / "agents-skills"
 HARNESS = P / "agents-harness"

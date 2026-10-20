@@ -11,8 +11,9 @@ Oct 19, 2026. The first iteration of `absolute-pipeline`, in the form of `absolu
 | | |
 | --- | --- |
 | Instance | `i-054398816027e565c`, provisioned as an m7i.2xlarge on Oct 19 at 16:28 UTC, resized to an **r7i.2xlarge** (8 vCPU, 64 GB, 61 GB usable) at 20:13 when the data service was killed for memory; us-east-1a, Ubuntu 24.04 |
-| Address | Elastic IP **54.157.116.42**. Ports 22 and 80 open to the owner's IPs only (181.237.196.142, and 190.242.101.109 added Oct 20); nothing else inbound |
+| Address | Elastic IP **54.157.116.42**, and **https://backtests.signoscapital.com** (an A record at GoDaddy). SSH open to the owner's IPs only (181.237.196.142, 190.242.101.109); 80 and 443 open, the site behind Google sign-in (PL-D29) |
 | Disk | 300 GB gp3 |
+| Web | Caddy (TLS, Let's Encrypt) → oauth2-proxy v7.15.5 on 127.0.0.1:4180 (Google, `@signoscapital.com` only; the OAuth consent screen Internal) → the static site's nginx on 127.0.0.1:8080: `deploy/web-up.sh` |
 | Services (systemd) | `abt-data` (S&P 500 equities and the first Databento roots, `data.sock`), `abt-data-futures` (the Databento futures snapshot `store-futures-current`, `futures.sock`), `seed-site` (the site loop and nginx on port 80). `abt-data-norgate` and `abt-data-equities` exist and are disabled (below). Every data service runs with a resident budget and `MALLOC_ARENA_MAX=2` |
 | Shared runs | `/usr/local/bin/abt-slot`: five slots of 10 GB (a data load reserves one); runs are the out-of-memory killer's first choice; `abt check` and `abt data query` skip the queue |
 | Role | `absolute-pipeline-machine`: read on `ndlake-…`, `dbn-futures-…`, `orats-backup-…`. A write permission scoped to nine new root prefixes of `dbn-futures-…` was added for one upload and removed after it |
@@ -123,6 +124,8 @@ The futures among them ran on Norgate's continuous daily futures, before the own
 | PL-D26 | **the owner's:** Databento roots bought only when the free cost preview says $0 (OHLCV is in the subscription); saved to S3 under new prefixes only, with a sha256 manifest, verified, the write permission removed after | buying trades or order-book data |
 | PL-D27 | the full equity store's service disabled until E-120 bounds a binding (it reached 45 GB in three minutes); equities read the S&P 500 store (2014 on) meanwhile | serving it unbounded |
 | PL-D28 | the OpenAI guard counts every recorded job, the attic included (it read $21.90 when $35.28 had been spent) | counting only live jobs |
+| PL-D29 | **the owner's:** the site at `https://backtests.signoscapital.com` behind Google sign-in for `@signoscapital.com` accounts. DNS stays at GoDaddy, so no Cloudflare (Tunnel and Access need the zone on Cloudflare): Caddy terminates TLS with Let's Encrypt, oauth2-proxy admits the Workspace domain (the OAuth app is Internal, so Google refuses other accounts first), the static nginx listens on 127.0.0.1 only. Supersedes PL-D6 and the IP-only port 80 | Cloudflare Tunnel and Access (the nameservers would move off GoDaddy); the IP allowlist (it broke with every new IP) |
+| PL-D30 | **the owner's (Oct 20, 14:43):** the OpenAI guard raised from $50 to $100, counted over every recorded job (PL-D28); the queue runs as the systemd unit `sol-queue`, eight jobs at a time, four 14 GB slots | the $50 cap (48 posts queued with $12.86 left) |
 | PL-D120 to PL-D131 | the report site's decisions, in `crates/abt-report/README.md` and its agent's commits | |
 
 ## Owner inputs (the default taken)
@@ -130,7 +133,7 @@ The futures among them ran on Norgate's continuous daily futures, before the own
 1. **The X API.** No bearer token; X through xAI (PL-D9) and the public mirror.
 2. **The data's review.** The owner said the data is valid; every relation marked `reviewed = complete` (PL-D16).
 3. **The models.** The owner moved the analyst and the quant to `gpt-6.1-sol` (PL-D21) after the Opus agents' night (PL-D18).
-4. **The page's reach.** Port 80 admits the owner's IPs only: the pages reproduce X posts for the owner. Opening it wider, or behind a password, is the owner's call.
+4. **The page's reach.** The owner chose Google sign-in for any `@signoscapital.com` account at `backtests.signoscapital.com`, DNS kept at GoDaddy (PL-D29).
 5. **More Opus batches.** Every full backtest so far came from the Opus agents; whether to use them again beside `gpt-6.1-sol` is the owner's call.
 
 ## Debt
@@ -165,17 +168,17 @@ Each cut made at 17:52, and what it blocks:
 | Service | Amount | Guard |
 | --- | --- | --- |
 | X, through xAI | **$5.55**: the probe, the fetch of the 50 posts, the mining of campaign 2 | $25, hard |
-| OpenAI | **$35.28**, every recorded job (PL-D28): `gpt-6-luna` on Oct 19, `gpt-6.1-sol` from Oct 20 04:00 | $50, hard |
+| OpenAI | **$37.14** at 14:43, every recorded job (PL-D28): `gpt-6-luna` on Oct 19, `gpt-6.1-sol` from Oct 20 04:00 | $50, raised by the owner to $100 (PL-D30) |
 | Databento | **$0**: nine roots of OHLCV and definitions, covered by the subscription | the writer refuses any request above $0.01 |
 | AWS | about **$12** to Oct 20 14:00 UTC: m7i 3.75 h, r7i 18 h, the volume 22 h | none set |
 
 ## The trace at the final tree
 
-`absolute-backtest`'s `docs/spec/TRACE.md` on the amendments branch at e0aad8b: 202 rows, 154 done, 37 partial, 11 missing, 0 contradicts. The errata added overnight: E-104 (contracts synthesised from raw symbols), E-105 (session bars for daily programs), E-106 (a session window not yet begun), E-107 (`month_start` on a sessions clock), E-108 (CME session defaults), E-109 (the ladder's index once per level), E-110 (the services' memory, the schema list, derived relations without logs, pruning), E-111 (a version at a finer exponent), E-112 (`interval > 0`), E-113 (the Cboe series), E-114 (a window's trades), E-115 (each run compiled at its own point), E-116 (roll commission), E-117 (a root listed late), E-118 (`compare … by`), E-120 in part (`Distinct` by bucket), E-121 (rows lost when a relation was rebuilt after appends).
+`absolute-backtest`'s `docs/spec/TRACE.md` on the amendments branch at 4a6e011 (PR #76's head): 202 rows, 154 done, 37 partial, 11 missing, 0 contradicts. The errata added overnight: E-104 (contracts synthesised from raw symbols), E-105 (session bars for daily programs), E-106 (a session window not yet begun), E-107 (`month_start` on a sessions clock), E-108 (CME session defaults), E-109 (the ladder's index once per level), E-110 (the services' memory, the schema list, derived relations without logs, pruning), E-111 (a version at a finer exponent), E-112 (`interval > 0`), E-113 (the Cboe series), E-114 (a window's trades), E-115 (each run compiled at its own point), E-116 (roll commission), E-117 (a root listed late), E-118 (`compare … by`), E-119 (the weight invariant judges an order against the book it was sized from: the equity position-limit halts), E-120 (`Distinct` by bucket; a list-gated universe's binding, stream and checks scoped to its lists' members), E-121 (rows lost when a relation was rebuilt after appends).
 
 ## The pull requests and the page
 
-- Amendments: https://github.com/KurtCoVayne/absolute-backtest/pull/76
-- The pipeline: https://github.com/KurtCoVayne/absolute-pipeline/pull/1
-- The page: **http://54.157.116.42/index.html**, from the owner's IPs (PL-D6 is superseded: port 80 instead of a tunnel). Each post links to its page: the tweet, the idea and its assumptions, the analysis, the program and plan as run, the equity and drawdown charts with the held-out part shaded, the full / in-sample / out-of-sample table, contribution by market and year, the sensitivity grid, the red flags, the author's numbers beside ours, the verdict.
+- Amendments: https://github.com/KurtCoVayne/absolute-backtest/pull/76, merged Oct 20 15:01 UTC (1958b9f, CI green)
+- The pipeline: https://github.com/KurtCoVayne/absolute-pipeline/pull/1, merged Oct 20 14:23 UTC (e722ba9); what followed on `iter/01-mvp` (the signed-in site, the queue's fixes, this report's last sections) in https://github.com/KurtCoVayne/absolute-pipeline/pull/2
+- The page: **https://backtests.signoscapital.com**, after Google sign-in with a `@signoscapital.com` account (PL-D29). The owner signed in and confirmed the pages on Oct 20. Each post links to its page: the tweet, the idea and its assumptions, the analysis, the program and plan as run, the equity and drawdown charts with the held-out part shaded, the full / in-sample / out-of-sample table, contribution by market and year, the sensitivity grid, the red flags, the author's numbers beside ours, the verdict.
 - Run the queued posts on `gpt-6.1-sol` against the served Databento snapshot: `scripts/aws/ssh.sh 'cd /srv/absolute/absolute-pipeline && FUTURES_STORE=/srv/absolute/store-futures-current bash deploy/run-sol-databento.sh'`. The OpenAI guard stops at $45 of every recorded job.

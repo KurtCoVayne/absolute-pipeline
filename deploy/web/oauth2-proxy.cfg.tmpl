@@ -1,0 +1,22 @@
+# oauth2-proxy in front of the backtest site (PL-D29): Google sign-in, @signoscapital.com only.
+# deploy/web-up.sh fills the three @…@ fields from /etc/absolute-pipeline/ and writes the result
+# to /etc/absolute-pipeline/oauth2-proxy.cfg (root, 0600); the unit reads it as a credential.
+provider = "google"
+http_address = "127.0.0.1:4180"
+reverse_proxy = true
+trusted_proxy_ips = ["127.0.0.1/32"]  # only Caddy, on this host, sets X-Forwarded-*
+upstreams = ["http://127.0.0.1:8080/"]
+redirect_url = "https://backtests.signoscapital.com/oauth2/callback"
+whitelist_domains = ["backtests.signoscapital.com"]
+email_domains = ["signoscapital.com"]
+client_id = "@CLIENT_ID@"
+client_secret = "@CLIENT_SECRET@"
+cookie_secret = "@COOKIE_SECRET@"
+cookie_name = "_backtests"
+cookie_secure = true
+cookie_httponly = true
+cookie_samesite = "lax"
+cookie_expire = "168h"
+cookie_refresh = "1h"
+skip_provider_button = true
+set_xauthrequest = true
