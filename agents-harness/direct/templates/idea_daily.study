@@ -1,0 +1,16 @@
+study idea_daily {
+  program    tmpl_daily_moo.dsl
+  params     { n_entry = 55; n_exit = 20 }
+  grid       { n_entry = 20, 55, 100; n_exit = 10, 20, 40 }
+  holdout    trailing:20%
+  window     2010-06-07 .. 2026-09-18T19:12:37Z
+  budget     { money 0; bytes 2G; requests 0 }
+  objective  sharpe
+  steps {
+    run    base
+    grid   sens
+    reveal oos of base
+    report main
+  }
+  report { metrics [return, volatility, sharpe, mar, max_drawdown, drawdown_duration, trades, profit_factor, hit_rate, avg_win_loss]; tables [surface, subperiods, contribution]; text }
+}

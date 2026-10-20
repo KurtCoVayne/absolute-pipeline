@@ -1,0 +1,24 @@
+[Unit]
+Description=abt-data: the full Norgate equities (every US list and ETF from 1990, index series) on a third socket
+After=network-online.target
+
+[Service]
+User=ubuntu
+LimitMEMLOCK=infinity
+LimitNOFILE=1048576
+Environment=ABT_STORE=/srv/absolute/store-full
+# The resident cache of decoded partitions (D-3.4); the store is 30 GB.
+Environment=ABT_RESIDENT_BUDGET=4294967296
+# glibc heap arenas held 10 GB of a 2 GB-budget service (E-110): two arenas.
+Environment=MALLOC_ARENA_MAX=2
+ExecStartPre=/bin/mkdir -p /srv/absolute/run
+ExecStart=/bin/sh -c 'exec /srv/absolute/absolute-backtest/target/release/abt-data serve --store "$ABT_STORE" --socket /srv/absolute/run/equities.sock --profile dedicated'
+Restart=always
+RestartSec=5
+# The last process the out-of-memory killer picks: a backtest dies before the store.
+OOMScoreAdjust=-900
+StandardOutput=append:/srv/absolute/logs/abt-data-equities.log
+StandardError=append:/srv/absolute/logs/abt-data-equities.log
+
+[Install]
+WantedBy=multi-user.target

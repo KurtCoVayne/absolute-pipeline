@@ -1,0 +1,16 @@
+study idea_eq {
+  program    momentum_12_1.dsl
+  params     { n = 20 }
+  grid       { n = 10, 20 }
+  holdout    trailing:20%
+  window     2019-01-01 .. 2026-09-18T19:12:37Z
+  budget     { money 0; bytes 2G; requests 0 }
+  objective  sharpe
+  steps {
+    run    base
+    grid   sens
+    reveal oos of base
+    report main
+  }
+  report { metrics [return, volatility, sharpe, mar, max_drawdown, drawdown_duration, trades, profit_factor, hit_rate, avg_win_loss]; tables [surface, subperiods, contribution]; text }
+}

@@ -71,3 +71,4 @@ def test_no_window_cap_and_daily_programs_read_the_norgate_store(tmp_path: Path,
     assert b.guard_plan(plan, {"i.dsl": intraday}) == plan
     assert b._data_for({"d_moo.dsl": "strategy d_moo { universe { instruments { ES_N from 1997-09-09 } } }"}) == b.daily
     assert b._data_for({"d_moo.dsl": daily}) == b.data
+    assert b._data_for({"e.dsl": equity}) == b.equity_data

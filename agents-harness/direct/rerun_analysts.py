@@ -66,22 +66,23 @@ NOT_HELD = [
     "market breadth (advance/decline, new highs/lows)",
     "fundamentals, earnings dates, analyst estimates",
     "crypto spot prices, on-chain data, altcoin indexes (only the CME BTC, ETH and SOL futures, when listed below)",
-    "non-US indexes and their futures unless a root below is one (no Euro Stoxx, DAX, FTSE)",
-    "single stocks outside the S&P 500 since 2014",
-    "macro series (rates curves, PMIs, money supply) beyond the rate futures listed",
+    "non-US single stocks; non-US indexes unless a daily future below is one (FESX_N is the Euro Stoxx 50, FDAX_N the DAX …)",
+    "macro series (Treasury yield curves, PMIs, money supply) beyond the rate futures listed",
 ]
 
 MAPPING = [
-    ("QQQ, NDX, Nasdaq 100, NQ1!", "NQ (E-mini Nasdaq-100 future); MNQ for the micro"),
-    ("SPY, SPX, S&P 500, ES1!", "ES (E-mini S&P 500 future); MES for the micro"),
-    ("IWM, Russell 2000", "RTY"),
+    ("an ETF (QQQ, SPY, IWM, XBI, MTUM, GLD, TLT …)", "the ETF itself (equity, daily from its listing); its future (NQ, ES, RTY, GC, ZB) as a labelled variant"),
+    ("a US stock (NVDA, COIN, TEM …)", "the stock itself (equity, daily, from 1990 or its listing; delisted names kept)"),
+    ("NDX, Nasdaq 100, NQ1!", "NQ (E-mini Nasdaq-100 future); MNQ for the micro"),
+    ("SPX, S&P 500, ES1!", "ES (E-mini S&P 500 future); MES for the micro"),
+    ("Russell 2000", "RTY"),
     ("bitcoin, BTC, BTCUSD", "BTC (the CME Bitcoin future)"),
     ("ether, ETH, ETHUSD", "ETH (the CME Ether future)"),
     ("solana, SOL, SOLUSD", "SOL (the CME Solana future), when listed below"),
     ("gold, GLD, XAU", "GC when listed below"),
     ("crude oil, WTI, USO", "CL when listed below"),
     ("10-year Treasury, TLT", "ZN when listed below; ZB and UB for the long end"),
-    ("a stock ticker (NVDA, COIN, …)", "the equity of that ticker when it was an S&P 500 member at the time (check with resolve_symbols)"),
+    ("VIX, VXN, VVIX, SPX/NDX/RUT index levels", "the daily index series (VIX_D, SPX, SPXTR, NDX, RUT …)"),
 ]
 
 
@@ -147,15 +148,16 @@ def roots_from_rows(continuous: list[list[str]], tickers: list[list[str]]) -> li
     return sorted(named.values())
 
 
-def render_data_map(roots: list[tuple[str, str]], *, equity_span: str = "2014-01-02 .. 2026-10-14", equity_names: int = 756) -> str:
+def render_data_map(roots: list[tuple[str, str]], *, equity_span: str = "1990-01-02 .. 2026-10-14") -> str:
     lines = [
         "# The store's data map (what the backtester can test on)",
         "",
         f"**Futures** ({len(roots)} roots staged; back-adjusted continuous series per root, minute bars rolled up to sessions and days, from the date shown to 2026-08-14):",
         " ".join(f"{sym} ({first})" for sym, first in roots),
         "",
-        f"**Equities**: the S&P 500's members, current and past, {equity_names} names, daily bars {equity_span}, with splits, dividends, delistings, "
-        "index membership by day, and GICS sector, industry group, industry and sub-industry from one snapshot dated 2026-09-21 (no rows before it).",
+        f"**Equities**: every US-listed stock and ETF, current and delisted (Norgate, point in time), daily bars {equity_span}, with splits, dividends, delistings, "
+        "index membership by day (Russell 3000/2000/1000, S&P 500/400/600/1500/100, Nasdaq-100, NYSE, Nasdaq, Dow, ETFs), daily index series "
+        "(VIX, SPX, SPX total return, NDX, RUT, DJI and others), and GICS sector, industry group, industry and sub-industry from one snapshot dated 2026-09-21 (no rows before it).",
         "",
         "**Not held**: " + "; ".join(NOT_HELD) + ".",
         "",

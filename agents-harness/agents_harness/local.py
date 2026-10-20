@@ -163,6 +163,9 @@ class LocalAbt:
         self.daily = os.environ.get("ABT_DATA_DAILY", "/srv/absolute/run/norgate-futures.sock")
         self.store = os.environ.get("ABT_STORE", "/srv/absolute/store")
         self.daily_store = os.environ.get("ABT_STORE_DAILY", "/srv/absolute/store-norgate-futures")
+        # Norgate's equities: every US list and ETF from 1990, and the daily index series, on their own service.
+        self.equity_data = os.environ.get("ABT_DATA_EQUITY", "/srv/absolute/run/equities.sock")
+        self.equity_store = os.environ.get("ABT_STORE_EQUITY", "/srv/absolute/store-full")
         self.work = work or Path(os.environ.get("ABT_WORK", "/tmp/abt-work"))
         self.work.mkdir(parents=True, exist_ok=True)
         self.roots = [r for r in os.environ.get("ABT_ROOTS", "").split(",") if r]
@@ -240,7 +243,11 @@ class LocalAbt:
             if value and not roots and daily:
                 out["note"] = f"{value} is not in the minute store; daily: {', '.join(daily)}"
         elif cls == "equity":
-            out["universe"] = 'Norgate: every S&P 500 member since 2014-01-01, as of each day (member(A, T, "SPX")), daily bars'
+            out["universe"] = (
+                'Norgate: every US-listed stock and ETF, current and delisted, daily bars from 1990-01-02, point in time; lists by day '
+                '(member(A, T, "<LIST>")): RALL, R3000, R2000, R1000, RMID, RMICRO, RTOP200, SPX, SP100, SP400, SP600, SP1500, NDX, NASDAQ, NYSE, DJIA, NBI, ETF; '
+                'index series by `need series "<NAME>" @1d` (VIX_D, SPX, SPXTR, NDX, RUT …)'
+            )
         return out
 
     def _signatures(self, cls: str) -> list[str]:
@@ -313,7 +320,7 @@ class LocalAbt:
                             "note": f"daily only: Norgate's {root}_N from the root's inception (no minute bars)"})
                 continue
             try:
-                t = self._query_store(f"ticker where symbol = {sym}", 5)
+                t = self._query_store(f"ticker where symbol = {sym}", 5, store=self.equity_store)
                 found = bool(t.get("rows"))
             except GatewayError:
                 found = False
@@ -354,10 +361,12 @@ class LocalAbt:
             except ValueError:
                 pass
         parts.append(f"r <= {_iso(r_max)}")
-        daily = any(i.startswith(("n:", "u:")) for i in ids) or rel.startswith("series.")
-        table = self._query_store(" ".join(parts), int(body.get("limit") or 50), store=self.daily_store if daily else None)
+        daily = any(i.startswith(("n:", "u:")) for i in ids)
+        equity = rel.startswith(("equity.", "series.")) or rel in ("ticker", "vendor_id") and not daily
+        store = self.daily_store if daily else self.equity_store if equity else None
+        table = self._query_store(" ".join(parts), int(body.get("limit") or 50), store=store)
         table["query"] = " ".join(parts)
-        table["store"] = "daily (Norgate)" if daily else "minute"
+        table["store"] = "daily futures (Norgate)" if daily else "equities and index series (Norgate)" if equity else "minute futures"
         return table
 
     def _key(self, ident: str) -> str:
@@ -447,8 +456,10 @@ class LocalAbt:
 
     def _data_for(self, programs: Any) -> str:
         """The daily store's socket for a program on Norgate roots (`ES_N`), else the minute store's."""
-        texts = programs.values() if isinstance(programs, dict) else [str(programs)]
-        return self.daily if any(_NORGATE_ROOT.search(str(t)) for t in texts) else self.data
+        texts = [str(t) for t in (programs.values() if isinstance(programs, dict) else [programs])]
+        if any(re.search(r"\bclass\s+equity\b", t) for t in texts):
+            return self.equity_data
+        return self.daily if any(_NORGATE_ROOT.search(t) for t in texts) else self.data
 
     def _plan_files(self, body: dict[str, Any]) -> tuple[Path, list[str], str]:
         programs = {str(k): str(v) for k, v in (body.get("programs") or {}).items()}
