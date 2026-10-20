@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Every pending post on gpt-6.1-sol against the Databento futures store (the owner, Oct 20: futures from
-# Databento only). Requeues the jobs the 04:30 out-of-memory kill left "running", and the full backtests
-# made on Norgate's futures (set aside in the attic, not deleted); then one queue of quant jobs, six at a time.
+# Databento only). Requeues the jobs left "running" by a stopped run; then one queue of quant jobs, six at a
+# time. Full backtests are never moved: they stay on the page until a rerun replaces them.
 #   FUTURES_STORE=/srv/absolute/store-futures-current bash deploy/run-sol-databento.sh
 #   ONLY_MARKETS='\b(ES|NQ|SPY|QQQ)\b' OTHER_MARKETS='\b(CL|GC)\b' …: only the posts on the snapshot's markets now
 set -uo pipefail
@@ -17,7 +17,7 @@ for f in sorted(glob.glob("*/status.json")):
     p = f.split("/")[0]
     s = json.load(open(f))
     state, stage = s.get("state"), s.get("stage")
-    norgate = state == "done" and s.get("by") == "claude-opus"
+    norgate = False  # the full backtests stay on the page until a Databento rerun replaces them (Oct 20, 13:15)
     if (state, stage) == ("queued", "quant") or state == "running" or norgate:
         if state != "queued" or norgate:
             os.makedirs(f"{attic}/{p}", exist_ok=True)
