@@ -354,14 +354,22 @@ class LocalAbt:
             except ValueError:
                 pass
         parts.append(f"r <= {_iso(r_max)}")
-        table = self._query_store(" ".join(parts), int(body.get("limit") or 50))
+        daily = any(i.startswith(("n:", "u:")) for i in ids) or rel.startswith("series.")
+        table = self._query_store(" ".join(parts), int(body.get("limit") or 50), store=self.daily_store if daily else None)
         table["query"] = " ".join(parts)
+        table["store"] = "daily (Norgate)" if daily else "minute"
         return table
 
     def _key(self, ident: str) -> str:
-        """A futures root's symbol as its query key (`NQ` -> `NQ.v.0`); anything else as written."""
+        """A futures root's query key: the minute store's `NQ` -> `NQ.v.0`; the daily store's `ES_N` -> `n:ES`,
+        `ES_U` -> `u:ES` (vendor keys); anything else as written."""
         up = ident.upper()
-        return f"{up}.v.0" if up in self.roots else ident
+        if up in self.roots:
+            return f"{up}.v.0"
+        m = re.fullmatch(r"([A-Z][A-Z0-9]*)_([NU])", up)
+        if m and up in set(self.daily_roots()):
+            return f"{m.group(2).lower()}:{m.group(1)}"
+        return ident
 
     # ------------------------------------------------------------------ programs
 
