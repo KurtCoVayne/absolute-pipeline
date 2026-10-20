@@ -125,6 +125,7 @@ The futures among them ran on Norgate's continuous daily futures, before the own
 | PL-D27 | the full equity store's service disabled until E-120 bounds a binding (it reached 45 GB in three minutes); equities read the S&P 500 store (2014 on) meanwhile | serving it unbounded |
 | PL-D28 | the OpenAI guard counts every recorded job, the attic included (it read $21.90 when $35.28 had been spent) | counting only live jobs |
 | PL-D29 | **the owner's:** the site at `https://backtests.signoscapital.com` behind Google sign-in for `@signoscapital.com` accounts. DNS stays at GoDaddy, so no Cloudflare (Tunnel and Access need the zone on Cloudflare): Caddy terminates TLS with Let's Encrypt, oauth2-proxy admits the Workspace domain (the OAuth app is Internal, so Google refuses other accounts first), the static nginx listens on 127.0.0.1 only. Supersedes PL-D6 and the IP-only port 80 | Cloudflare Tunnel and Access (the nameservers would move off GoDaddy); the IP allowlist (it broke with every new IP) |
+| PL-D30 | **the owner's (Oct 20, 14:43):** the OpenAI guard raised from $50 to $100, counted over every recorded job (PL-D28); the queue runs as the systemd unit `sol-queue`, eight jobs at a time, four 14 GB slots | the $50 cap (48 posts queued with $12.86 left) |
 | PL-D120 to PL-D131 | the report site's decisions, in `crates/abt-report/README.md` and its agent's commits | |
 
 ## Owner inputs (the default taken)
@@ -167,7 +168,7 @@ Each cut made at 17:52, and what it blocks:
 | Service | Amount | Guard |
 | --- | --- | --- |
 | X, through xAI | **$5.55**: the probe, the fetch of the 50 posts, the mining of campaign 2 | $25, hard |
-| OpenAI | **$35.28**, every recorded job (PL-D28): `gpt-6-luna` on Oct 19, `gpt-6.1-sol` from Oct 20 04:00 | $50, hard |
+| OpenAI | **$37.14** at 14:43, every recorded job (PL-D28): `gpt-6-luna` on Oct 19, `gpt-6.1-sol` from Oct 20 04:00 | $50, raised by the owner to $100 (PL-D30) |
 | Databento | **$0**: nine roots of OHLCV and definitions, covered by the subscription | the writer refuses any request above $0.01 |
 | AWS | about **$12** to Oct 20 14:00 UTC: m7i 3.75 h, r7i 18 h, the volume 22 h | none set |
 
