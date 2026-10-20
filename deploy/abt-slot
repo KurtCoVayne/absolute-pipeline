@@ -9,6 +9,9 @@
 # the remaining slots. Runs are the out-of-memory killer's first choice
 # (oom_score_adj 500): a run reruns in minutes, an ingest does not.
 SLOTS=${SLOTS:-5}; CAP=${CAP:-10G}
+# glibc gives each thread its own heap arena (up to 8 per core) and keeps a freed
+# arena's pages: capped, so a plan's trials reuse the same heaps (E-110).
+export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-2}
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 ABT=/srv/absolute/absolute-backtest/target/release/abt
 mkdir -p /srv/absolute/locks

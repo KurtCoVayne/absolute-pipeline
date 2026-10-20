@@ -9,6 +9,8 @@ LimitNOFILE=1048576
 Environment=ABT_STORE=/srv/absolute/store-norgate-futures
 # The resident cache of decoded partitions (D-3.4): the whole store is 750 MB.
 Environment=ABT_RESIDENT_BUDGET=2147483648
+# glibc heap arenas held 10 GB of a 2 GB-budget service (E-110): two arenas.
+Environment=MALLOC_ARENA_MAX=2
 ExecStartPre=/bin/mkdir -p /srv/absolute/run
 ExecStart=/bin/sh -c 'exec /srv/absolute/absolute-backtest/target/release/abt-data serve --store "$ABT_STORE" --socket /srv/absolute/run/norgate-futures.sock --profile dedicated'
 Restart=always
