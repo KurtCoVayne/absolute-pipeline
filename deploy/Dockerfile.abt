@@ -1,0 +1,10 @@
+# The three backtester programs and the front, from the release binaries
+# built on the machine (deploy/up.sh builds them on the host so one build
+# serves Compose and the host alike). Build context: /srv/absolute.
+FROM ubuntu:24.04
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tini && rm -rf /var/lib/apt/lists/* \
+ && useradd -r -u 1500 -d /nonexistent -s /usr/sbin/nologin abt
+COPY absolute-backtest/target/release/abt absolute-backtest/target/release/abt-data absolute-backtest/target/release/abt-kernel absolute-backtest/target/release/abt-query /usr/local/bin/
+COPY absolute-backtest/corpus-v2 /opt/abt/corpus-v2
+USER abt
+ENTRYPOINT ["/usr/bin/tini", "--"]

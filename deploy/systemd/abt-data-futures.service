@@ -1,0 +1,25 @@
+[Unit]
+Description=abt-data: the Databento futures (GLBX roots, sessions 17:45/20) on their own socket
+After=network-online.target
+
+[Service]
+User=ubuntu
+LimitMEMLOCK=infinity
+LimitNOFILE=1048576
+# A symlink to the latest numbered Databento snapshot (store-futures-serve-N): repoint, then restart.
+Environment=ABT_STORE=/srv/absolute/store-futures-current
+# The resident cache of decoded partitions (D-3.4).
+Environment=ABT_RESIDENT_BUDGET=6442450944
+# glibc heap arenas held 10 GB of a 2 GB-budget service (E-110): two arenas.
+Environment=MALLOC_ARENA_MAX=2
+ExecStartPre=/bin/mkdir -p /srv/absolute/run
+ExecStart=/bin/sh -c 'exec /srv/absolute/absolute-backtest/target/release/abt-data serve --store "$ABT_STORE" --socket /srv/absolute/run/futures.sock --profile dedicated'
+Restart=always
+RestartSec=5
+# The last process the out-of-memory killer picks: a backtest dies before the store.
+OOMScoreAdjust=-900
+StandardOutput=append:/srv/absolute/logs/abt-data-futures.log
+StandardError=append:/srv/absolute/logs/abt-data-futures.log
+
+[Install]
+WantedBy=multi-user.target

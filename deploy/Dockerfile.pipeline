@@ -1,0 +1,9 @@
+# The pipeline's Rust services from the release binaries built on the
+# machine. Build context: /srv/absolute. One image, several commands.
+FROM ubuntu:24.04
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tini docker-cli libseccomp2 && rm -rf /var/lib/apt/lists/* \
+ && useradd -r -u 1501 -d /nonexistent -s /usr/sbin/nologin pipeline
+COPY absolute-pipeline/target/release/ingest absolute-pipeline/target/release/ingest-fetch absolute-pipeline/target/release/orchestrator absolute-pipeline/target/release/egress-proxy absolute-pipeline/target/release/pipeline absolute-pipeline/target/release/abt-gateway absolute-pipeline/target/release/abt-report /usr/local/bin/
+COPY absolute-pipeline/agents-skills /opt/agents-skills
+COPY absolute-pipeline/docs/design/fixtures /opt/fixtures
+ENTRYPOINT ["/usr/bin/tini", "--"]

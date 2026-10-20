@@ -1,0 +1,66 @@
+# The pipeline around absolute-backtest (docs/design/pipeline.md, PL-3): the
+# shared records, the ingest layer, the agents' orchestrator, the gateway and
+# the report site. The backtester's crates enter as git dependencies pinned
+# to a commit of absolute-backtest; the harness is Python (agents-harness/).
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+pipeline-wire = { path = "crates/pipeline-wire" }
+ingest-core = { path = "crates/ingest-core" }
+# absolute-backtest, pinned (PL-3); the pull request of the amendments moves the rev.
+abt-wire = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-data = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-kernel = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-query = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+abt-tests = { git = "https://github.com/KurtCoVayne/absolute-backtest", rev = "9d69523" }
+arrow = { version = "60", default-features = false, features = ["ipc"] }
+blake3 = { version = "1.8", default-features = false, features = ["std", "pure"] }
+planus = "1.3.0"
+planus-codegen = "1.3.0"
+planus-translation = "1.3.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+anyhow = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+rdkafka = { version = "0.37", features = ["cmake-build", "ssl-vendored"] }
+redb = "2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+hyper = { version = "1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http-body-util = "0.1"
+axum = "0.8"
+biscuit-auth = "6"
+simd-json = "0.14"
+unicode-normalization = "0.1"
+toml = "0.8"
+proptest = "1"
+tempfile = "3"
+rand = "0.9"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+ed25519-dalek = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+debug = "line-tables-only"
+
+[profile.dev]
+opt-level = 1
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = false

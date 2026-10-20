@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# abt in one of the machine's SLOTS slots, each memory-capped (CAP), so that
+# several agents share the machine without the out-of-memory killer taking
+# the data service: waits for a free slot, then runs
+# /srv/absolute/absolute-backtest/target/release/abt "$@" under the cap.
+#   abt-slot plan run study.study prog.dsl <library> --data /srv/absolute/run/data.sock --kernels 2 --json
+# A large ingest reserves memory by writing a number of slots to withhold in
+# /srv/absolute/locks/reserve (removed when it ends); new runs then take only
+# the remaining slots. Runs are the out-of-memory killer's first choice
+# (oom_score_adj 500): a run reruns in minutes, an ingest does not.
+SLOTS=${SLOTS:-5}; CAP=${CAP:-10G}
+# glibc gives each thread its own heap arena (up to 8 per core) and keeps a freed
+# arena's pages: capped, so a plan's trials reuse the same heaps (E-110).
+export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-2}
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+ABT=/srv/absolute/absolute-backtest/target/release/abt
+mkdir -p /srv/absolute/locks
+# `abt check` reads no data and `abt data query` one store's rows: neither waits for a slot.
+if [ "${1:-}" = check ] || { [ "${1:-}" = data ] && [ "${2:-}" = query ]; }; then
+  exec systemd-run --user --scope --quiet -p MemoryMax=4G -p MemorySwapMax=0 choom -n 500 -- "$ABT" "$@"
+fi
+while true; do
+  withhold=$(cat /srv/absolute/locks/reserve 2>/dev/null | tr -cd 0-9); withhold=${withhold:-0}
+  n=$((SLOTS - withhold)); [ "$n" -lt 1 ] && n=1
+  for i in $(seq 1 "$n"); do
+    exec 9>"/srv/absolute/locks/slot-$i"
+    if flock -n 9; then
+      exec systemd-run --user --scope --quiet -p MemoryMax="$CAP" -p MemorySwapMax=0 choom -n 500 -- "$ABT" "$@"
+    fi
+    exec 9>&-
+  done
+  sleep 5
+done

@@ -1,0 +1,40 @@
+# Campaign 2's accounts (the owner, Oct 19, 2026): only the ones that post
+# strategies, mined over the last 45 days; everyone else on the follow list
+# posts product launches, AI bots, courses, fund news or macro reporting.
+# Evidence: the seed run's outcomes on the machine (/srv/absolute/direct/out).
+
+[[account]]
+handle = "quantifiedstrat"
+evidence = "both seed posts are full rule sets (turn-of-month on ES, IBS on QQQ)"
+
+[[account]]
+handle = "SystematicPeter"
+evidence = "seed post: a 5-day z-score scale-in system with explicit thresholds"
+
+[[account]]
+handle = "lindaraschke"
+evidence = "seed post: an opening-range pattern on ES"
+
+[[account]]
+handle = "buildalpha"
+evidence = "publishes generated and tested strategies with rules and metrics"
+
+[[account]]
+handle = "ripster47"
+evidence = "the source of the EMA-cloud trading rules"
+
+[[account]]
+handle = "mcclellanosc"
+evidence = "seed post: BTC positioning extremes; indicator-based timing studies"
+
+[[account]]
+handle = "onlybreakouts"
+evidence = "seed post: a breakout system with reported results"
+
+[[account]]
+handle = "techcharts"
+evidence = "two seed hypotheses: a BTC 20-bar breakout and retest, a SOL pennant"
+
+[[account]]
+handle = "peterlbrandt"
+evidence = "three seed hypotheses: BTC spring, ETH breakout, SOL resistance"

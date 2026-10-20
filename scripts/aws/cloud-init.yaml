@@ -1,0 +1,71 @@
+#cloud-config
+# The machine's software (PL-8.4): Docker and Compose, gVisor as a Docker
+# runtime, Rust stable, Python 3.12 (Ubuntu 24.04's), memlock unlimited for
+# the store's user, and the secrets directory.
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - git
+  - build-essential
+  - pkg-config
+  - libssl-dev
+  - cmake
+  - clang
+  - python3.12
+  - python3.12-venv
+  - python3-pip
+  - rsync
+  - jq
+  - unzip
+  - htop
+  - sysstat
+  - libseccomp-dev
+write_files:
+  - path: /etc/security/limits.d/90-absolute.conf
+    content: |
+      *    soft memlock unlimited
+      *    hard memlock unlimited
+      root soft memlock unlimited
+      root hard memlock unlimited
+      *    soft nofile  1048576
+      *    hard nofile  1048576
+  - path: /etc/systemd/system.conf.d/limits.conf
+    content: |
+      [Manager]
+      DefaultLimitMEMLOCK=infinity
+      DefaultLimitNOFILE=1048576
+  - path: /etc/sysctl.d/90-absolute.conf
+    content: |
+      vm.max_map_count=1048576
+      fs.aio-max-nr=1048576
+      net.core.somaxconn=4096
+      vm.swappiness=1
+  - path: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "50m", "max-file": "5" },
+        "default-ulimits": { "memlock": { "Name": "memlock", "Hard": -1, "Soft": -1 }, "nofile": { "Name": "nofile", "Hard": 1048576, "Soft": 1048576 } },
+        "runtimes": { "runsc": { "path": "/usr/bin/runsc", "runtimeArgs": ["--network=sandbox", "--platform=systrap"] } }
+      }
+runcmd:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable" > /etc/apt/sources.list.d/docker.list'
+  - curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
+  - 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main" > /etc/apt/sources.list.d/gvisor.list'
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin runsc
+  - usermod -aG docker ubuntu
+  - systemctl daemon-reexec
+  - systemctl restart docker
+  - sysctl --system
+  - install -d -m 0700 -o ubuntu -g ubuntu /etc/absolute-pipeline
+  - install -d -m 0755 -o ubuntu -g ubuntu /srv/absolute
+  - sudo -u ubuntu -H bash -c 'curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable -c rustfmt -c clippy'
+  - sudo -u ubuntu -H bash -c 'python3.12 -m venv /srv/absolute/venv && /srv/absolute/venv/bin/pip install -q --upgrade pip'
+  - curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip && cd /tmp && unzip -q awscliv2.zip && ./aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip

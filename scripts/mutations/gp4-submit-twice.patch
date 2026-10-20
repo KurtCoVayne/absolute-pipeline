@@ -1,0 +1,29 @@
+# property: GP-4 (a second submit in one job is refused)
+# mutation: a job may submit again and again
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/api.rs b/crates/abt-gateway/src/api.rs
+index d0a1a3e..ad4342b 100644
+--- a/crates/abt-gateway/src/api.rs
++++ b/crates/abt-gateway/src/api.rs
+@@ -1081,9 +1081,6 @@ impl Gateway {
+             .map(|a| a.iter().map(|c| c.as_str().map(str::to_string).unwrap_or_else(|| c.to_string())).collect())
+             .unwrap_or_default();
+         let insample = body.get("insample").cloned().unwrap_or(Value::Object(Map::new()));
+-        if let Some(earlier) = self.jobs.state(&grant.job).submission {
+-            return Err(ApiError::new(409, "submitted", format!("job {} already submitted {}", grant.job, earlier)));
+-        }
+         match self.jobs.program_of(&grant.job, plan_hash) {
+             Some(p) if p == program_hash => {}
+             Some(p) => {
+@@ -1180,9 +1177,7 @@ impl Gateway {
+             skills_hash: None,
+         };
+         record.id = record.id();
+-        if let Err(earlier) = self.jobs.submit(&grant.job, &record.id) {
+-            return Err(ApiError::new(409, "submitted", format!("job {} already submitted {}", grant.job, earlier)));
+-        }
++        let _ = self.jobs.submit(&grant.job, &record.id);
+         provenance::put(&self.layers, provenance::submission_row(&record).map_err(|e| ApiError::new(502, "layer", e))?)?;
+         self.horizon.forget(provenance::SUBMISSION);
+         tracing::info!(job = %grant.job, submission = %record.id, forward_plan = %forward_plan_hash, trials_used, "submission recorded");

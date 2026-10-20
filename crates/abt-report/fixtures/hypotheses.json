@@ -1,0 +1,509 @@
+[
+  {
+    "id": "244c4744b00cac66d4595c12c881e11d7891fa94a94bef46836a65308b8ee07b",
+    "doc_ids": [
+      "75050b3c24c55ff2bd9330830d53d9b2e693a37468f9c4482874bb2824299bab",
+      "0b31d0b5c6854c84b760db74ba96df2b38a1006442768dcf6c11fb37d364d8ad"
+    ],
+    "h": "2026-09-18T19:12:36Z",
+    "statement": "A weekly close above the top of a multi-year cup-and-handle in gold is followed by a trend to the measured move more often than a random long of the same holding period.",
+    "universe": "GC (COMEX gold)",
+    "signal": "weekly close above the 13-year high (the cup's rim); stop under the handle low; exit at the measured move or the stop",
+    "horizon": "months, until the measured move or the stop",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "75050b3c24c55ff2bd9330830d53d9b2e693a37468f9c4482874bb2824299bab",
+        "span_from": 51,
+        "span_to": 97,
+        "quote": "Weekly close above 2,440 completes the pattern"
+      }
+    ],
+    "author_reported": "{\"capital\":\"100,000 per contract\",\"net_pct\":null,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":1,\"from\":\"2013\",\"to\":\"2026\",\"instrument\":\"GC\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.55,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.028950314386181147,
+    "r": "2026-10-06T10:00:00Z",
+    "job_id": "498fa3e4328192b6536730a12feefcf1eb6a39e160eb25a0081ef679a962f910",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "a975c6951e16e5bcc1480e4ca24a91bd24425fdf630c3126c21570403b0f9195",
+    "doc_ids": [
+      "740d7d005c2096268fa1b63974130e6212117f0411b199fb5c6bc571912be334",
+      "05895e031d8960ef1bccd5b40f3bead79bbd99e019c2406729ec6ea7c6b57694"
+    ],
+    "h": "2026-09-23T15:03:06Z",
+    "statement": "Buying NQ at the close when the 10-day RSI is below 25 and exiting when it crosses 55 has a positive expectancy after costs.",
+    "universe": "NQ (Nasdaq-100 futures)",
+    "signal": "RSI(10) < 25 at the close; exit when RSI(10) > 55",
+    "horizon": "days",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "740d7d005c2096268fa1b63974130e6212117f0411b199fb5c6bc571912be334",
+        "span_from": 30,
+        "span_to": 103,
+        "quote": "buy the close when the 10-day RSI drops below 25, exit when it crosses 55"
+      }
+    ],
+    "author_reported": "{\"capital\":\"equal size per trade\",\"net_pct\":null,\"drawdown_pct\":12,\"sharpe\":null,\"trades\":312,\"from\":\"2006\",\"to\":\"2026\",\"instrument\":\"NQ\",\"compounding\":false,\"costs\":false,\"sizing\":\"equal\"}",
+    "confidence": 0.7,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.029252167884908788,
+    "r": "2026-10-06T10:10:00Z",
+    "job_id": "cd5b5f8685e4e542f774eefaa33aaf630f40e232c2c89293d8f6b3bfe19a8a06",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "e7ab5f3d2f5c8dfbb90be15d2c4e2eb26fbe395d79694cbdda0b6eaf08e11a78",
+    "doc_ids": [
+      "13fce5d8c097cfba91e9e424f99188d89a0cfde39a8f76fd0aed4dcbbf4a1b5f"
+    ],
+    "h": "2026-09-19T13:00:01Z",
+    "statement": "The turn-of-the-month long in ES, from the last close of the month to the third close of the next, earns more than the unconditional drift of the same days.",
+    "universe": "ES (S&P 500 futures)",
+    "signal": "calendar: long from the last trading day's close to the third trading day's close",
+    "horizon": "3 trading days",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "13fce5d8c097cfba91e9e424f99188d89a0cfde39a8f76fd0aed4dcbbf4a1b5f",
+        "span_from": 53,
+        "span_to": 159,
+        "quote": "long from the close of the last trading day of the month to the close of the third trading day of the next"
+      }
+    ],
+    "author_reported": "{\"capital\":\"unlevered\",\"net_pct\":2.1,\"drawdown_pct\":9,\"sharpe\":0.9,\"trades\":342,\"from\":\"1998\",\"to\":\"2026\",\"instrument\":\"ES\",\"compounding\":true,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.75,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.02938335504746427,
+    "r": "2026-10-06T10:20:00Z",
+    "job_id": "ddf922fff97d7cb87b5327c786ce4b707e6d893673bde7b7c4c06d27dfaee206",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "519fff94063fd56c2b5faa3c5fa6f057681bbe7796e5d420c350acd6066f1af5",
+    "doc_ids": [
+      "4b1478ceda6ca1f12f85b4d34ceb512bfaa19b4ef038c1d048fc1d7714d92fc2",
+      "4fc8041e1bb23bdc3ae13bd2ba20f72dd9d7a17a7af206c90cdaeb153bcb2c83"
+    ],
+    "h": "2026-09-18T11:46:08Z",
+    "statement": "A 100-day breakout entry with a 50-day breakout exit and a 3-ATR stop on a diversified futures universe has a Sharpe above 0.5 after costs at fixed capital.",
+    "universe": "the 40 liquid futures of the house list",
+    "signal": "100-day high/low breakout entry, 50-day opposite breakout exit, 3-ATR stop, risk 7,500 USD per trade",
+    "horizon": "weeks to months",
+    "direction": "Both",
+    "data_needs": [
+      "future.bars",
+      "future.rolls",
+      "future.catalog"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "4b1478ceda6ca1f12f85b4d34ceb512bfaa19b4ef038c1d048fc1d7714d92fc2",
+        "span_from": 45,
+        "span_to": 161,
+        "quote": "enter on a 100-day breakout, exit on a 50-day breakout against, risk 0.5 percent of equity per trade on a 3-ATR stop"
+      }
+    ],
+    "author_reported": "{\"capital\":\"equity, compounding\",\"net_pct\":11.2,\"drawdown_pct\":24,\"sharpe\":0.78,\"trades\":null,\"from\":\"1990\",\"to\":\"2026\",\"instrument\":\"40 futures\",\"compounding\":true,\"costs\":true,\"sizing\":\"fixed\"}",
+    "confidence": 0.8,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.030921800862633693,
+    "r": "2026-10-06T10:30:00Z",
+    "job_id": "e2bfff4e83adec471dd8054aabd440f38ed406a8ff2e8f976c18add6fac9e7eb",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "f3d93c3c7d4eda486b654a8eb23e4eb78ec1ce54e069e0d3c966cf46c3fbf421",
+    "doc_ids": [
+      "eb51512a38af8e70caa72d7c618da4e734d6b2578938b58c676704bbfab34083"
+    ],
+    "h": "2026-09-30T09:30:00Z",
+    "statement": "Scaling an always-long ES position to a 10 percent annualised volatility estimate raises the Sharpe above the unscaled position's.",
+    "universe": "ES (S&P 500 futures)",
+    "signal": "position = target vol / realised 20-day vol, rebalanced daily",
+    "horizon": "continuous",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "eb51512a38af8e70caa72d7c618da4e734d6b2578938b58c676704bbfab34083",
+        "span_from": 31,
+        "span_to": 111,
+        "quote": "scale the position to a 10 percent annualised vol estimate from the last 20 days"
+      }
+    ],
+    "author_reported": "{\"capital\":\"fixed\",\"net_pct\":null,\"drawdown_pct\":27,\"sharpe\":0.71,\"trades\":null,\"from\":\"1990\",\"to\":\"2026\",\"instrument\":\"ES\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.8,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.032462240283862166,
+    "r": "2026-10-06T10:40:00Z",
+    "job_id": "b4daa6727ed64935249a3bff2f5416eaf606749c0c106bc9760aeb108a8c78b1",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "2869e98fc255f65a4434e14811d8f48b5b947c4fb7c862bab3d8c7a694fe5c30",
+    "doc_ids": [
+      "e30febe48c32d51fa82f68c726767a493bfa6d7589d39726c91913227bc48c32"
+    ],
+    "h": "2026-09-24T14:03:13Z",
+    "statement": "A 20-day high breakout in crude with a 3-ATR trailing stop has a profit factor above 1.2 after costs across lookbacks of 10 to 40 days.",
+    "universe": "CL (WTI crude futures)",
+    "signal": "close above the 20-day high; 3-ATR trailing stop",
+    "horizon": "days to weeks",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "e30febe48c32d51fa82f68c726767a493bfa6d7589d39726c91913227bc48c32",
+        "span_from": 0,
+        "span_to": 63,
+        "quote": "Breakout of the 20-day high in $CL_F with a 3-ATR trailing stop"
+      }
+    ],
+    "author_reported": "{\"capital\":100000,\"net_pct\":null,\"drawdown_pct\":22,\"sharpe\":null,\"trades\":410,\"from\":\"2000\",\"to\":\"2026\",\"instrument\":\"CL\",\"compounding\":false,\"costs\":true,\"sizing\":\"fixed\"}",
+    "confidence": 0.7,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.02480226559961293,
+    "r": "2026-10-06T10:50:00Z",
+    "job_id": "4aa13144df433d8e7d4eefa5e3b5b88f6902e89d28d0c5306c346aef75fc7ac7",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "46cd9337121145ad4b4b7c4f0a50d93a6c040f0dfb5292b017ef080d68c33d9f",
+    "doc_ids": [
+      "0091e699fe359c55bb7957bfc6fc341f68e234a16c860277390f06b084cc449c"
+    ],
+    "h": "2026-09-21T20:39:55Z",
+    "statement": "A head-and-shoulders bottom with a held neckline retest in copper, bought on the retest, reaches its measured target before the stop under the right shoulder more often than not.",
+    "universe": "HG (COMEX copper) and the house metals",
+    "signal": "pattern: neckline break, retest held; long at the retest close; stop under the right shoulder; target the measured move",
+    "horizon": "months",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "0091e699fe359c55bb7957bfc6fc341f68e234a16c860277390f06b084cc449c",
+        "span_from": 70,
+        "span_to": 109,
+        "quote": "The retest of the neckline at 4.35 held"
+      }
+    ],
+    "author_reported": "{\"capital\":null,\"net_pct\":null,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":1,\"from\":\"2025\",\"to\":\"2026\",\"instrument\":\"HG\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.35,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.029740536473205764,
+    "r": "2026-10-06T11:00:00Z",
+    "job_id": "56f39cc854c1bf04577a98eb8c660cadbbfa3364c87ff7146a5d2344c912de7d",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "73898897bdad08a26cb1eef3d6954d12a33ce24eb927626b72b5c6c821fe45fe",
+    "doc_ids": [
+      "43c2a142f400d60cd7f35ca47901b65aeb30efcb1c75030af86586d91a9d7a59"
+    ],
+    "h": "2026-09-26T13:00:00Z",
+    "statement": "In gold above its 200-day average, a 2-day RSI below 10 at the close is followed by a close above the 5-day average with a profit factor above 1.5 after costs.",
+    "universe": "GC (COMEX gold)",
+    "signal": "RSI(2) < 10 and close > SMA(200); exit on the first close above SMA(5)",
+    "horizon": "days",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "43c2a142f400d60cd7f35ca47901b65aeb30efcb1c75030af86586d91a9d7a59",
+        "span_from": 12,
+        "span_to": 133,
+        "quote": "a 2-day RSI below 10 with price above the 200-day average, buy the close, sell on the first close above the 5-day average"
+      }
+    ],
+    "author_reported": "{\"capital\":null,\"net_pct\":null,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":141,\"from\":\"2005\",\"to\":\"2026\",\"instrument\":\"GC\",\"compounding\":false,\"costs\":false,\"sizing\":\"equal\"}",
+    "confidence": 0.65,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.021757955798115326,
+    "r": "2026-10-06T11:10:00Z",
+    "job_id": "2d66338640f3d768c3e826d00ed0316cb51ecacd7054ecb3a7c53056aea42b6a",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "c83e65f6c06eb83d9f5b12604579aed5cdc5eaaf5e1896c8585fd0743a55da1f",
+    "doc_ids": [
+      "4ac963a9036e37fbd2026925c0188a863e4607bd776d59952b055886034fb13f"
+    ],
+    "h": "2026-09-22T05:40:12Z",
+    "statement": "The first hour of Monday in Nifty futures has a positive mean return.",
+    "universe": "NIFTY futures (NSE)",
+    "signal": "buy the Monday open, sell at 10:15 local",
+    "horizon": "one hour",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars@1m"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "4ac963a9036e37fbd2026925c0188a863e4607bd776d59952b055886034fb13f",
+        "span_from": 107,
+        "span_to": 140,
+        "quote": "Buy the open, sell at 10:15 local"
+      }
+    ],
+    "author_reported": "{\"capital\":null,\"net_pct\":0.21,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":540,\"from\":\"2015\",\"to\":\"2026\",\"instrument\":\"NIFTY\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.4,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.03957407952295305,
+    "r": "2026-10-06T11:20:00Z",
+    "job_id": "4a0770d1b3e7212831f00fd286fa1e682d9bed1ad231fdcf08f92e3cec5ef576",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "98d8909ed567f40bb8b5f8b5f3b23ed2bf76bb174919f8a0db6503e7a924b534",
+    "doc_ids": [
+      "a223776de3d5055e50af5f04af75f46fd935af3558752ec367f380678078ae87"
+    ],
+    "h": "2026-09-24T07:15:30Z",
+    "statement": "After a weekly EIA crude draw larger than 3 million barrels, crude closes the week above the Wednesday close more often than the unconditional rate.",
+    "universe": "CL (WTI crude futures)",
+    "signal": "EIA weekly inventory change < -3 million barrels; long Wednesday close to Friday close",
+    "horizon": "2 days",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "macro.eia_inventory"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "a223776de3d5055e50af5f04af75f46fd935af3558752ec367f380678078ae87",
+        "span_from": 21,
+        "span_to": 142,
+        "quote": "when the Wednesday EIA print is a draw larger than 3 million barrels, crude closes the week higher 68 percent of the time"
+      }
+    ],
+    "author_reported": "{\"capital\":null,\"net_pct\":null,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":210,\"from\":\"2012\",\"to\":\"2026\",\"instrument\":\"CL\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.5,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.02565325494925522,
+    "r": "2026-10-06T11:30:00Z",
+    "job_id": "b3958cd53f4ac1218c134d930c6ec627c9cb509ae2dd6bdf4ff345f4cfc2f612",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "c3a1665bd16dcd787979e7911d730160269a14f8a5331d4cdc1a882a286049b4",
+    "doc_ids": [
+      "fa3ed771b8d2064f28d200322bc8bc106f59d04bd26c6edb6a0957b3ea6ff96d"
+    ],
+    "h": "2026-09-21T16:45:42Z",
+    "statement": "A McClellan Summation Index cross below zero within 2 percent of the ES high is followed by a 5 percent decline within three months more often than the base rate.",
+    "universe": "ES (S&P 500 futures)",
+    "signal": "summation index crosses below 0 while the close is within 2 percent of the 252-day high; short, exit at -5 percent or after 63 bars",
+    "horizon": "up to 3 months",
+    "direction": "Short",
+    "data_needs": [
+      "future.bars",
+      "equity.breadth"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "fa3ed771b8d2064f28d200322bc8bc106f59d04bd26c6edb6a0957b3ea6ff96d",
+        "span_from": 118,
+        "span_to": 196,
+        "quote": "that divergence preceded a 5 percent decline within 3 months in 11 of 14 cases"
+      }
+    ],
+    "author_reported": "{\"capital\":null,\"net_pct\":null,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":14,\"from\":\"1998\",\"to\":\"2026\",\"instrument\":\"ES\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.45,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.03271446697568291,
+    "r": "2026-10-06T11:40:00Z",
+    "job_id": "6b827be03d86510e0ab271294da493c10e77a91e9235f3df10b951d0c54fc385",
+    "record": "Hypothesis"
+  },
+  {
+    "id": "009d2f210e20c203ce8c94a55bc50102db27dbb738cf022f4ff8da96f7659232",
+    "doc_ids": [
+      "4bf0ab03c30a0c0e70ac57e0851b43db3a265090fa61a70f540bfec881f573e7"
+    ],
+    "h": "2026-09-30T06:00:00Z",
+    "statement": "Natural gas held from the first trading day of September to the first of December has a positive mean return after costs.",
+    "universe": "NG (Henry Hub natural gas futures)",
+    "signal": "calendar: long from the first September close to the first December close",
+    "horizon": "3 months",
+    "direction": "Long",
+    "data_needs": [
+      "future.bars",
+      "future.rolls"
+    ],
+    "claims": [
+      "survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after",
+      "not_overfit : pbo on grid sens expect statistic < 0.5 after"
+    ],
+    "evidence": [
+      {
+        "doc_id": "4bf0ab03c30a0c0e70ac57e0851b43db3a265090fa61a70f540bfec881f573e7",
+        "span_from": 48,
+        "span_to": 149,
+        "quote": "long from the first trading day of September to the first of December has won 19 of the last 26 years"
+      }
+    ],
+    "author_reported": "{\"capital\":null,\"net_pct\":14,\"drawdown_pct\":null,\"sharpe\":null,\"trades\":26,\"from\":\"2000\",\"to\":\"2026\",\"instrument\":\"NG\",\"compounding\":false,\"costs\":false,\"sizing\":\"fixed\"}",
+    "confidence": 0.5,
+    "agent": "analyst",
+    "model": "gpt-6-luna",
+    "prompt_hash": "c7d7ba8aca1415de843fab45160d4edc0f6ee7fb95439b58b64c64b30bf10b52",
+    "skills": [
+      "house-rules",
+      "content-is-data",
+      "extract-hypothesis"
+    ],
+    "cost_usd": 0.036708060260434355,
+    "r": "2026-10-06T11:50:00Z",
+    "job_id": "89abcfaedf4538562e51376dbff671345fcc0efbeef34b0a2a3c67dce57df09a",
+    "record": "Hypothesis"
+  }
+]

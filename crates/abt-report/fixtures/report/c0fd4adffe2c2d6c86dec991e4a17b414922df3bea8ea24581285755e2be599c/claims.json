@@ -1,0 +1,56 @@
+{
+  "columns": [
+    "name",
+    "test",
+    "input",
+    "phase",
+    "policy",
+    "insample",
+    "oos",
+    "p_value",
+    "p_adjusted",
+    "statistic",
+    "level"
+  ],
+  "rows": [
+    [
+      "survives_costs",
+      "bootstrap_sharpe",
+      "returns of base",
+      "after",
+      "warn",
+      "holds",
+      "fails",
+      0.31,
+      0.465,
+      0.21,
+      0.05
+    ],
+    [
+      "not_overfit",
+      "pbo",
+      "grid sens",
+      "after",
+      "warn",
+      "holds",
+      "fails",
+      0.44,
+      0.66,
+      0.3,
+      0.05
+    ],
+    [
+      "profitable",
+      "dsr",
+      "returns of base",
+      "after",
+      "warn",
+      "holds",
+      "fails",
+      0.588,
+      0.882,
+      0.412,
+      0.05
+    ]
+  ]
+}

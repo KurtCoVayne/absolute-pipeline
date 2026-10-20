@@ -1,0 +1,108 @@
+[
+  {
+    "id": "e8b2f42bd23b4d30a926be41b2f0b73217b0a5b1bd256dfed6538ba740b05490",
+    "stage": "Strategize",
+    "inputs": [
+      "c83e65f6c06eb83d9f5b12604579aed5cdc5eaaf5e1896c8585fd0743a55da1f"
+    ],
+    "agent": "quant",
+    "definition_hash": "1e243c3f77b5b17b03f3070d5dc5d44be8de17f1e9bf99de13bef1ab4850b246",
+    "skills_hash": "931d4f9a1f42c7d19f886e77146edcca7a102858b26aa70416a1bdfa836c8b73",
+    "model": "gpt-6-luna",
+    "caps": [
+      "abt.catalog",
+      "abt.query",
+      "abt.check",
+      "abt.plan",
+      "abt.report",
+      "abt.submit",
+      "notes.write"
+    ],
+    "budget": {
+      "tokens_in": 400000,
+      "tokens_out": 60000,
+      "tool_calls": 120,
+      "wall_s": 1500,
+      "money_usd": 0.25,
+      "plan_runs": 4,
+      "grid_points": 25,
+      "checks": 20
+    },
+    "attempt": 1,
+    "state": "Failed",
+    "sandbox": "sandbox-8",
+    "started": "2026-10-14T14:00:00Z",
+    "finished": "2026-10-14T14:04:00Z",
+    "cost": {
+      "tokens_in": 38000,
+      "tokens_out": 2100,
+      "tokens_cached": 20000,
+      "tool_calls": 6,
+      "wall_s": 240.0,
+      "money_usd": 0.03
+    },
+    "outputs": null,
+    "failure": {
+      "reason": "not_testable",
+      "retryable": false,
+      "detail": "the signal needs the first hour of the session on 1-minute bars; the house data is daily"
+    },
+    "h": "2026-09-22T05:40:12Z",
+    "lineage": "",
+    "campaign": "seed-2026-10",
+    "record": "Job"
+  },
+  {
+    "id": "e05ff74b0ddb66c247e29ec19325d14c5d3917f8ae8d900e53f30394c31595df",
+    "stage": "Strategize",
+    "inputs": [
+      "98d8909ed567f40bb8b5f8b5f3b23ed2bf76bb174919f8a0db6503e7a924b534"
+    ],
+    "agent": "quant",
+    "definition_hash": "1e243c3f77b5b17b03f3070d5dc5d44be8de17f1e9bf99de13bef1ab4850b246",
+    "skills_hash": "931d4f9a1f42c7d19f886e77146edcca7a102858b26aa70416a1bdfa836c8b73",
+    "model": "gpt-6-luna",
+    "caps": [
+      "abt.catalog",
+      "abt.query",
+      "abt.check",
+      "abt.plan",
+      "abt.report",
+      "abt.submit",
+      "notes.write"
+    ],
+    "budget": {
+      "tokens_in": 400000,
+      "tokens_out": 60000,
+      "tool_calls": 120,
+      "wall_s": 1500,
+      "money_usd": 0.25,
+      "plan_runs": 4,
+      "grid_points": 25,
+      "checks": 20
+    },
+    "attempt": 1,
+    "state": "Failed",
+    "sandbox": "sandbox-9",
+    "started": "2026-10-14T14:15:00Z",
+    "finished": "2026-10-14T14:19:00Z",
+    "cost": {
+      "tokens_in": 38000,
+      "tokens_out": 2100,
+      "tokens_cached": 20000,
+      "tool_calls": 6,
+      "wall_s": 240.0,
+      "money_usd": 0.03
+    },
+    "outputs": null,
+    "failure": {
+      "reason": "no_data",
+      "retryable": false,
+      "detail": "macro.eia_inventory is not in the owner's Databento store"
+    },
+    "h": "2026-09-24T07:15:30Z",
+    "lineage": "",
+    "campaign": "seed-2026-10",
+    "record": "Job"
+  }
+]

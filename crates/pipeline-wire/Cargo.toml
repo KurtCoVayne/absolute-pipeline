@@ -1,0 +1,22 @@
+[package]
+name = "pipeline-wire"
+description = "The pipeline's records (PL-4.1): FlatBuffers tables compiled from schema/pipeline.fbs, ids by BLAKE3 over RFC 8785 canonical JSON of the logical fields (as abt-wire), the horizon's time arithmetic and the log's topics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+abt-wire.workspace = true
+blake3.workspace = true
+planus.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[build-dependencies]
+planus-codegen.workspace = true
+planus-translation.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

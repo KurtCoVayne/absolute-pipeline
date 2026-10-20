@@ -1,0 +1,40 @@
+{
+  "columns": [
+    "run",
+    "window",
+    "years",
+    "return",
+    "volatility",
+    "sharpe",
+    "mar",
+    "max_drawdown",
+    "drawdown_duration",
+    "trades",
+    "profit_factor",
+    "hit_rate",
+    "avg_win_loss",
+    "dsr",
+    "psr",
+    "trials"
+  ],
+  "rows": [
+    [
+      "base",
+      "forward",
+      0.5,
+      8.2,
+      12.4,
+      0.88,
+      0.44,
+      0.248,
+      2.749,
+      39.0,
+      1.368,
+      0.37,
+      2.6,
+      0.845,
+      0.86,
+      32
+    ]
+  ]
+}

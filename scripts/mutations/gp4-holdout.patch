@@ -1,0 +1,28 @@
+# property: GP-4 (a plan without the required hold-out is refused)
+# mutation: any hold-out, or none, passes as the development plan's
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/plan.rs b/crates/abt-gateway/src/plan.rs
+index a78a1f4..34e1c51 100644
+--- a/crates/abt-gateway/src/plan.rs
++++ b/crates/abt-gateway/src/plan.rs
+@@ -410,18 +410,7 @@ pub fn kind_of(s: &Study, h: i64) -> Result<Kind, Refusal> {
+             }
+             Kind::Forward
+         }
+-        Some(other) => {
+-            return Err(refuse(
+-                "holdout",
+-                format!("study {}: `holdout {}` is neither `trailing:…` over a window ending at H nor `after {}`", s.name, other, hs),
+-            ))
+-        }
+-        None => {
+-            return Err(refuse(
+-                "holdout",
+-                format!("study {}: a plan declares its hold-out: `trailing:…` with `window FIRST .. {}`, or `after {}`", s.name, hs, hs),
+-            ))
+-        }
++        Some(_) | None => Kind::Development,
+     };
+     let money_zero = s.budget.as_ref().is_some_and(|b| {
+         b.iter().any(|e| {

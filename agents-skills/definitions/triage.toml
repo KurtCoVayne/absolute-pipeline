@@ -1,0 +1,21 @@
+# The triage agent (PL-6.2, PL-6.5): one document in, one Triage record out, one model call.
+# knowledge_cutoff: May 18, 2026, as OpenAI's model page states it ("May 18, 2026 knowledge
+# cutoff", https://developers.openai.com/api/docs/models/gpt-6-luna, read on Oct 19, 2026).
+# The cutoff enters H (Definition PL-4.1).
+
+[agent]
+name   = "triage"
+stage  = "triage"
+model  = { provider = "openai", id = "gpt-6-luna", knowledge_cutoff = "2026-05-18" }
+skills = ["house-rules", "content-is-data", "triage"]
+caps   = ["docs.read", "notes.write"]
+
+[budget]
+tokens_in = 40_000          # the house rules, the triage skill and up to four images (one call)
+tokens_out = 1_000
+tool_calls = 2
+wall_s = 60
+money_usd = 0.002
+
+[output]
+records = ["Triage"]

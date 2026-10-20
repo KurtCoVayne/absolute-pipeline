@@ -1,0 +1,41 @@
+[package]
+name = "abt-gateway"
+description = "The only entry to the three backtester services for the pipeline (docs/design/pipeline.md, PL-7; docs/design/contracts.md, sections 5 and 6): the JSON tool API towards the sandboxes, the abt-wire face towards the layers, the clamps on H, the plan guards, the kernel-pool queue, the pipeline.* provenance, the audit and the forward scheduler"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "abt-gateway"
+path = "src/main.rs"
+
+[dependencies]
+pipeline-wire.workspace = true
+abt-wire.workspace = true
+arrow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+axum.workspace = true
+biscuit-auth.workspace = true
+rdkafka = { workspace = true, optional = true }
+base64 = "0.22"
+
+[features]
+# Kafka is the deployment's (deploy/Dockerfile.gateway builds with it); the tests
+# need no broker, so the default build leaves librdkafka out.
+default = []
+kafka = ["dep:rdkafka"]
+
+[dev-dependencies]
+abt-data.workspace = true
+abt-kernel.workspace = true
+abt-query.workspace = true
+abt-tests.workspace = true
+proptest.workspace = true
+tempfile.workspace = true

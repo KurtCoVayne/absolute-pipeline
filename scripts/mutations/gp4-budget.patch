@@ -1,0 +1,17 @@
+# property: GP-4 (budget { money 0 } is required, A-D22)
+# mutation: a plan that spends money is not refused
+# test: CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test -p abt-gateway --test gp4 the_guards_refuse_with_their_codes
+# Applied by scripts/mutate.sh; the test must fail under it.
+diff --git a/crates/abt-gateway/src/plan.rs b/crates/abt-gateway/src/plan.rs
+index a78a1f4..30b339b 100644
+--- a/crates/abt-gateway/src/plan.rs
++++ b/crates/abt-gateway/src/plan.rs
+@@ -431,7 +431,7 @@ pub fn kind_of(s: &Study, h: i64) -> Result<Kind, Refusal> {
+                     .is_some_and(|v| v.trim_start_matches('0').trim_start_matches('.').trim_start_matches('0').trim().is_empty() || v == "0")
+         })
+     });
+-    if !money_zero {
++    if false && !money_zero {
+         return Err(refuse(
+             "budget",
+             format!("study {}: `budget {{ money 0; … }}` is required (A-D22: the pipeline spends nothing on data)", s.name),

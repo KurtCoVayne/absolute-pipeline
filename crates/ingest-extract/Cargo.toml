@@ -1,0 +1,9 @@
+[package]
+name = "ingest-extract"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+pipeline-wire.workspace = true

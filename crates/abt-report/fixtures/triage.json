@@ -1,0 +1,762 @@
+[
+  {
+    "id": "86ada42c2d1ea592e2a9e99b1f7ef3a87ada8b079b86bbc62170effc1a7012d3",
+    "doc_id": "75050b3c24c55ff2bd9330830d53d9b2e693a37468f9c4482874bb2824299bab",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "GC"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.9160619431883259,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001131809233451644,
+    "r": "2026-09-18T19:12:41Z",
+    "job_id": "c68e51bcdcad82b7bb07a0c996a39dcf8de55740456f6df0d193c81c8a4df472",
+    "record": "Triage"
+  },
+  {
+    "id": "8d24817c047548ed8e48775d037527d621304c8ea2400e272a029743e4386797",
+    "doc_id": "0b31d0b5c6854c84b760db74ba96df2b38a1006442768dcf6c11fb37d364d8ad",
+    "doc_version": 1,
+    "verdict": "Claim",
+    "instruments": [
+      "GC"
+    ],
+    "topics": [
+      "statistic"
+    ],
+    "score": 0.5664066056719023,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0011672650915859426,
+    "r": "2026-09-18T19:20:15.100000000Z",
+    "job_id": "b8e6a847d5d7870be86e7473eb37fd244f3edc37e0eb15d828a058b8af47760e",
+    "record": "Triage"
+  },
+  {
+    "id": "7a6b86314071ee7b018b7c644fddecfefe046c25168f80de1293bff0cbd13685",
+    "doc_id": "b971183738b803615f8ed5381aa3beb50f3b50dbb8e39b12340ab73bdd277ba2",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ZS"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.9487164768261109,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0015223435948424659,
+    "r": "2026-09-20T01:09:03.200000000Z",
+    "job_id": "55a790053482781c5aad23266fc0e4fa0d9542a466e1f6182309f4cb69b9ac16",
+    "record": "Triage"
+  },
+  {
+    "id": "5e97209b6e4f43cf4e6beafe8ca5d0763dbae7ab16783de07d77ca91a3095e2c",
+    "doc_id": "6a3549c0120ddc4569a4bf89f388d3231c0b554b9f8b75bb1b939b51e52f1d96",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.248735598483281,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0012320785230569755,
+    "r": "2026-09-21T11:36:19.300000000Z",
+    "job_id": "08279f768d52ce0489f8307a4708f12f8f08581dcf3b00487a133612cb9d398a",
+    "record": "Triage"
+  },
+  {
+    "id": "a499a695cce1c0ee7f9e0ebb4485021a89a078af532158f3a49c3353be5487ab",
+    "doc_id": "0091e699fe359c55bb7957bfc6fc341f68e234a16c860277390f06b084cc449c",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "HG"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8967251121967443,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001291383025087333,
+    "r": "2026-09-21T20:40:00.400000000Z",
+    "job_id": "d7bdcea7ff60fe206c9943d8466ab8ffcf78621f73614e6d98a2d1a9b137f81c",
+    "record": "Triage"
+  },
+  {
+    "id": "8237b510ec936d70eba3b115d3aacf2ed65f9ff0b5a542009fad223cc3a8fb1f",
+    "doc_id": "472afc7a20109f8d7ac0b0a49f56fc38c57ed47a6316ecb989f54ac935824ff8",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "CL"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7548189517671697,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001575908866482636,
+    "r": "2026-09-21T09:38:33Z",
+    "job_id": "4583dfefaba4ed37c9fe5cbd68a787073eda2c6f3f2b85fd5bf194035b7febf9",
+    "record": "Triage"
+  },
+  {
+    "id": "f7b57c992f500d6eece50256c77e5162509157f8bde802dd843338bc7a3d389b",
+    "doc_id": "73fb0672009ae6c9707baaefbcf4a0935941e46288cebac2bedbeb803f811736",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [
+      "CL"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.3870496680649184,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0012424776457071864,
+    "r": "2026-09-21T09:41:07.100000000Z",
+    "job_id": "39492a989959c79bdb0d44cfecbd8788d150f08cb7e6615c53cc72a616073fb6",
+    "record": "Triage"
+  },
+  {
+    "id": "32c077830c2280a6a2fa0f1b182bed9f2bf3c7325239edbcec5bce6cfe3f9a21",
+    "doc_id": "32efeb0bc678c4399da73ba50d3d600f4e141d7b3c49dada461dbfdbdaebe9d3",
+    "doc_version": 1,
+    "verdict": "Claim",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "statistic"
+    ],
+    "score": 0.5151305295362847,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014378770535858406,
+    "r": "2026-09-25T08:12:49.200000000Z",
+    "job_id": "2c13ce380dfe63d0d4dedb7b611ba69ef11973d578b8353f42dd84749d36137f",
+    "record": "Triage"
+  },
+  {
+    "id": "0393f6622e669fa14ac4e6b0ad3b39e1745e852168e4da384cb6628d75888dfa",
+    "doc_id": "6b0288be42e5d552ec6842aec958f678a79ada096294aa36966bbdf1ad5dae6a",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "SI"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.9122529419994785,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0012273323416363902,
+    "r": "2026-09-28T14:30:05.300000000Z",
+    "job_id": "1efae9104c2f9901c8fce5ee01359c51e0d98305e1f9b5894ef281f951d24d5c",
+    "record": "Triage"
+  },
+  {
+    "id": "5f8f9e9843e8530ab31f81f3ee8fb8304cb41214d23979a8a061a20e14d338d1",
+    "doc_id": "740d7d005c2096268fa1b63974130e6212117f0411b199fb5c6bc571912be334",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "NQ"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7630563484925829,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014079666597965365,
+    "r": "2026-09-23T15:03:11.400000000Z",
+    "job_id": "2b4b4203c29d325870d3773d17fcad32b7cb217b50ccd48d7c2cffbafc3ce7cb",
+    "record": "Triage"
+  },
+  {
+    "id": "b14660692b3a3ff781e3b4bfb8580770ce09aaa2b94a43525d6c9c4c785e1098",
+    "doc_id": "05895e031d8960ef1bccd5b40f3bead79bbd99e019c2406729ec6ea7c6b57694",
+    "doc_version": 1,
+    "verdict": "Claim",
+    "instruments": [
+      "ES",
+      "YM"
+    ],
+    "topics": [
+      "statistic"
+    ],
+    "score": 0.6376389939471867,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0011493852617081308,
+    "r": "2026-09-23T15:10:45Z",
+    "job_id": "50ebc08e734900be7cf2f4d784ebf616a1c2047eafb1d75a80feb1351e70f61c",
+    "record": "Triage"
+  },
+  {
+    "id": "58c0feb251784df0f83bb0b663c6b6681260d64ea0c76cd372f5d66f2043e343",
+    "doc_id": "8817a1d05faec115442b1144376becf4be839029e7e7fa2406709839147b7237",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8734514323454075,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014118988175911389,
+    "r": "2026-09-29T12:44:17.100000000Z",
+    "job_id": "b51ef370a4d44fddd292ec3cda166bf91c55e6738bfcfab95d6a8e6e6f034bd3",
+    "record": "Triage"
+  },
+  {
+    "id": "2caaf777cd4e43faf2e9b818f5f488396b5fc73a40a3a00a41b856b54e84e5d6",
+    "doc_id": "1292113f340577e383ec98d7e0dfb9fbf39de70822ba568fb3a70a364d504bc3",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.37089899310726143,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0012738579137151662,
+    "r": "2026-09-30T18:03:56.200000000Z",
+    "job_id": "5f331d7c959ee5d96bc13efe65f3a88fdf15cbaddd615dea51f6463e873744be",
+    "record": "Triage"
+  },
+  {
+    "id": "c6404fc28a33ea96fcde042ad67e9a2b195e3fae7443055ad8a388e6692eee6c",
+    "doc_id": "13fce5d8c097cfba91e9e424f99188d89a0cfde39a8f76fd0aed4dcbbf4a1b5f",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8647275302300952,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0016491076638676496,
+    "r": "2026-09-19T13:00:06.300000000Z",
+    "job_id": "34ad8288dc468a1e9a4e2f7b5dc2d72d524b648b24005725e91aa0d4819f5254",
+    "record": "Triage"
+  },
+  {
+    "id": "baa23727bfc53ae0800a45004dfac419bf6d5b9020153167251c29a351ab0fce",
+    "doc_id": "4f02be9e111159407f824d1088b57a4dfcb9a9c3138411e1e3d5123094e5a72b",
+    "doc_version": 1,
+    "verdict": "Claim",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "statistic"
+    ],
+    "score": 0.5070152088167312,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014888116809733708,
+    "r": "2026-09-19T17:55:05.400000000Z",
+    "job_id": "87e27581264c4d34be0bdaca04015434f33bf6f496ca670940f22b66888f478a",
+    "record": "Triage"
+  },
+  {
+    "id": "ebf9fec59f02c6c0dd59675caec326384e8f9b52007aa82606c007fda6104571",
+    "doc_id": "43c2a142f400d60cd7f35ca47901b65aeb30efcb1c75030af86586d91a9d7a59",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "GC"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8259438404317603,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0011607291979190656,
+    "r": "2026-09-26T13:00:05Z",
+    "job_id": "3fca27c55c2d2581eefb96591d039c1ea4a694be5af2cf470315f543bf47b437",
+    "record": "Triage"
+  },
+  {
+    "id": "ab83685ee98875fa81b255ecfb20a6df7d04c582d3ab652de340a08af0cb7abe",
+    "doc_id": "2134d7c1c60b062d79ebd00bef9693aa67ccbb6788ed365dfdfb6385340d9bd9",
+    "doc_version": 2,
+    "verdict": "Commentary",
+    "instruments": [
+      "GC"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.3768527462036308,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0016294373764173104,
+    "r": "2026-09-26T13:02:05.100000000Z",
+    "job_id": "9a1b5ee3488bb93d146eee7bf82edcbbe58ebeeabe8e36f0aae6ca22b1c10244",
+    "record": "Triage"
+  },
+  {
+    "id": "de3ed570cc182d443902988aed6b26173b82a250dfe4a25b50477da0470ba82f",
+    "doc_id": "4b1478ceda6ca1f12f85b4d34ceb512bfaa19b4ef038c1d048fc1d7714d92fc2",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES",
+      "CL",
+      "GC",
+      "ZN"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7900559258341603,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014486325923823277,
+    "r": "2026-09-18T11:46:13.200000000Z",
+    "job_id": "7cfcbae243eb8fd693cf534108393e3a6891ab13eed2c96a125e5254799b8e19",
+    "record": "Triage"
+  },
+  {
+    "id": "2d77efd1258f39c9401bba9ddc4d49c9bb839e011c1880e7b57f4f2b02960576",
+    "doc_id": "4fc8041e1bb23bdc3ae13bd2ba20f72dd9d7a17a7af206c90cdaeb153bcb2c83",
+    "doc_version": 1,
+    "verdict": "Claim",
+    "instruments": [
+      "ES",
+      "CL"
+    ],
+    "topics": [
+      "statistic"
+    ],
+    "score": 0.6639067513763179,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014768925919595036,
+    "r": "2026-09-21T13:46:12.300000000Z",
+    "job_id": "b32436b20b2411bf9c735be799e29f2e963ffe5c839a9e1a25b83d77f3b0e2b1",
+    "record": "Triage"
+  },
+  {
+    "id": "9215d95ab4c516e91fd485410f0de9e3d80f63c5d845483c0b5f75aeb288deb5",
+    "doc_id": "cec8735d3b68e8287a636fb581ad0e8d902d36797f301b137e095b1daf6e9d0a",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ZN"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7707243650941802,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001460242586720763,
+    "r": "2026-09-27T16:20:35.400000000Z",
+    "job_id": "113b4d2169c9545e4eb0be939c9da04c0c491237747c87d26f367c6628136889",
+    "record": "Triage"
+  },
+  {
+    "id": "0caff88a582ca1d8bb8b35d2e503425d616a84eb4b0559508a9a6b011adcec08",
+    "doc_id": "ec30c669ab3b55a15d94f2e8781fc08795dd734f21d5b486238271ae6dfb213c",
+    "doc_version": 1,
+    "verdict": "None",
+    "instruments": [],
+    "topics": [
+      "noise"
+    ],
+    "score": 0.020274595944715913,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001281135728538452,
+    "r": "2026-09-27T16:25:05Z",
+    "job_id": "751733345e5e2bc84497ece6c01840b0d25b60ff0ad31e3f96470f12d9f8f407",
+    "record": "Triage"
+  },
+  {
+    "id": "98d983060db6e8744b1e6bd6290018f3bb9da20e732e1a1df05456d709008f9b",
+    "doc_id": "4ac963a9036e37fbd2026925c0188a863e4607bd776d59952b055886034fb13f",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "NIFTY"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8897172515515243,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0015509383898271337,
+    "r": "2026-09-22T05:40:17.100000000Z",
+    "job_id": "f0d09b89da11894b91e6c3f4c132baa494f6d8615e8a8a0b995c71578c58edc3",
+    "record": "Triage"
+  },
+  {
+    "id": "6484805536d893b8fe5c2b94693f556b3232c206a215c688e2fc1b75b5bce981",
+    "doc_id": "a223776de3d5055e50af5f04af75f46fd935af3558752ec367f380678078ae87",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "CL"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8838777660075312,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0015518230510670325,
+    "r": "2026-09-24T07:15:35.200000000Z",
+    "job_id": "2c3e1e1ca88a84a47bbfc53f83d3658ca501b60f25ee7b680293d28c8d6d7cc7",
+    "record": "Triage"
+  },
+  {
+    "id": "59f959a07dcc29c084e1c645dfbdb14a2bcbc108b06e4a2209a248433340ffa8",
+    "doc_id": "9087c3cb54a34cfb111036a0b1d1ad79e6dd503edd5c361919fa877db92b177b",
+    "doc_version": 2,
+    "verdict": "Commentary",
+    "instruments": [
+      "CL"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.2968806264541111,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0015750249803561968,
+    "r": "2026-09-24T07:16:05.300000000Z",
+    "job_id": "b146ec2f38f374e6d9f1e8aa53746330225d80eed4fd8d7bd0e9c45684bc9115",
+    "record": "Triage"
+  },
+  {
+    "id": "2e548665b1b9fcd0d3076aca3261614ab33e8d015341fd0469d76f9d371debfe",
+    "doc_id": "4bf0ab03c30a0c0e70ac57e0851b43db3a265090fa61a70f540bfec881f573e7",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "NG"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.795986447761393,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0013894471145698478,
+    "r": "2026-09-30T06:00:05.400000000Z",
+    "job_id": "d39b92ddc2aab69a498e9831c2358d28b10dea557eb9421783e09fc05ec63237",
+    "record": "Triage"
+  },
+  {
+    "id": "69713556da677ff701e6ca6b328fa9a1dac66dba9b12b11d1b8e27a7c8fd90fd",
+    "doc_id": "d656f39caf9f193c64169c5b2e408a9b5f253076d228a665cd64339a7c154124",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7596879622909269,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001344203901754999,
+    "r": "2026-09-29T14:00:05Z",
+    "job_id": "426c1ad58edb5c98fff12569bdbeee42183784826c134f9bcf2bd31f417c1406",
+    "record": "Triage"
+  },
+  {
+    "id": "a670b02a89b9847bdb4a7a1f2abddbc054e7951d2188f6fc4657a11281b88699",
+    "doc_id": "757bf51da7e0d5f6d29469da6fc1c52648d6e9eebc382f46e896b37011561fd2",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.3414561559437541,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001135323827100933,
+    "r": "2026-09-29T14:03:05.100000000Z",
+    "job_id": "6379deb5609dca0821196e650e79dc2923da19a4a1cf97cef65ab214035bc1e7",
+    "record": "Triage"
+  },
+  {
+    "id": "9f6994e4aa4f5308b722302bbb2e97742b38ca0e3a574e0e312f4fc1ca547cf9",
+    "doc_id": "eb51512a38af8e70caa72d7c618da4e734d6b2578938b58c676704bbfab34083",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.906862397161752,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001479988955447742,
+    "r": "2026-09-30T09:30:05.200000000Z",
+    "job_id": "216b709bb62e1eecef214f1dcf244c76406d9cc607240cedfd5e03a7c0352696",
+    "record": "Triage"
+  },
+  {
+    "id": "377fb461efcee2f244b7ed26107c1896148e05a853bbec44fb6670814df280d5",
+    "doc_id": "1dc31279962fd5a49fe359442050fca2f894188d177027fe4aa6b55a08d4862d",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "NQ"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8180799843409587,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001342919904055939,
+    "r": "2026-09-21T14:02:42.300000000Z",
+    "job_id": "739637969b995461ce62d7cd15e72f3ce84e89f145aec2cbd22a889bdbeb1411",
+    "record": "Triage"
+  },
+  {
+    "id": "28a46f3197412bade5365e3773247e8e3a1b4807840469bf36e98faff35dfbf2",
+    "doc_id": "00a1a4b79cdd054744f7011519907145102f7eb8e46c942e8d7b4278e3f060f6",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.3698296005668671,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0014223652102788073,
+    "r": "2026-09-21T14:10:05.400000000Z",
+    "job_id": "bfdd2802313dc0dac6ed275dbd68996d9acbcd62cb6cdf54f94a7e2b851300b5",
+    "record": "Triage"
+  },
+  {
+    "id": "9865ded1c66bc8c39f3be3edd601c84c986b8bcba5ed03ad5f69cab3fc1fe117",
+    "doc_id": "01c3c132e3a93ca76af1d8c9d45489cfccfc8235524eaf7b11ea425616022954",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7849125081453805,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0012585382882546565,
+    "r": "2026-10-02T15:00:05Z",
+    "job_id": "5a39ae9e1805c00dde443a093e590ae7fc8e0b5d0ddb9c7523afcc711e85132d",
+    "record": "Triage"
+  },
+  {
+    "id": "040c47e57539c16ad9323e84c349c7703b568f09c058c5b66b71d7fe49d004d4",
+    "doc_id": "fa3ed771b8d2064f28d200322bc8bc106f59d04bd26c6edb6a0957b3ea6ff96d",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.8961466525130267,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0012397396416952836,
+    "r": "2026-09-21T16:45:47.100000000Z",
+    "job_id": "094b145d9662c34581ee2fcff6cca8b8c7fee9abafde8c5efe4a9d4982b36bfb",
+    "record": "Triage"
+  },
+  {
+    "id": "3e8885b5c2354efb01d6fb47dc043cec5d389b698ac1e6a719150e813e9569c3",
+    "doc_id": "eb68797e5f0e43755980ce3fa925a7e256bcf7697e0a9ebced73ae869d055665",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "GC"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.929414689025736,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0013494672180714758,
+    "r": "2026-09-28T16:00:05.200000000Z",
+    "job_id": "c436f45aa4bec09d9af06ed0d7290ad49f4aa25a6e1402115878cd0650db9438",
+    "record": "Triage"
+  },
+  {
+    "id": "80d4d515ff9225ab8e8805787030da2294bcf23939c34f87b62fac5cb690f300",
+    "doc_id": "5fc4bd05179b4bf73be859c5ddd697122563ee0a41a86e8eab78b19818d0a32c",
+    "doc_version": 1,
+    "verdict": "Claim",
+    "instruments": [
+      "HG",
+      "GC",
+      "ZN"
+    ],
+    "topics": [
+      "statistic"
+    ],
+    "score": 0.5866563401767901,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.001313549397443115,
+    "r": "2026-10-03T14:00:05.300000000Z",
+    "job_id": "5074cbd3c49234c8c667acb0191a708ac3ec8bba6475a6e35e1f7b6bc593e94a",
+    "record": "Triage"
+  },
+  {
+    "id": "f48be29b666d21ecf0acb8e521ef02178938db83307a8fa5c8df878c49c07094",
+    "doc_id": "0ac2dda246552d1db44f85116a39c7b72deacf4ccbdd83d7e4b4c8f040376e79",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [
+      "ES"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.33593895157154363,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0013871111246550128,
+    "r": "2026-09-23T13:40:05.400000000Z",
+    "job_id": "fc7729b86836ff1dcf2798494da1abb6d67e84dd9ab966acfc53a8b55f2d8a87",
+    "record": "Triage"
+  },
+  {
+    "id": "963042508467379e0cc1bcc88d7dc4301fba183940caee5ddfc4446bcd706040",
+    "doc_id": "e30febe48c32d51fa82f68c726767a493bfa6d7589d39726c91913227bc48c32",
+    "doc_version": 1,
+    "verdict": "Candidate",
+    "instruments": [
+      "CL"
+    ],
+    "topics": [
+      "rule"
+    ],
+    "score": 0.7907763088957734,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0016703464476833974,
+    "r": "2026-09-24T14:03:18Z",
+    "job_id": "ef6613fbfae61892d32db43d1d7f8eb74b0f5a0e0a5fe6ee53c4c955223c58a9",
+    "record": "Triage"
+  },
+  {
+    "id": "a8a991dbf5b5348c502b9dc1046bf42777b85c33f85c71c9274422e4ba539a7c",
+    "doc_id": "41170620f31cabefc67bdfbfa5082ee93874a38841095ee43a29fcb6bdbe0aec",
+    "doc_version": 2,
+    "verdict": "Commentary",
+    "instruments": [
+      "CL"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.264949020106952,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0015692960881656549,
+    "r": "2026-09-24T14:05:05.100000000Z",
+    "job_id": "0b158996eb2d9dbc82fbc68eaa75f9b73b11acb4144f77f0affe28c678f05b74",
+    "record": "Triage"
+  },
+  {
+    "id": "9ae1d5cfd51dae7282e795727677a327d605f5a18899b6b26d97b8fa3c2fcf7d",
+    "doc_id": "29da16dcdb7e006516d11f6b4f531de1dd7c3efc3e2b1ea37f311888f4b38f68",
+    "doc_version": 1,
+    "verdict": "None",
+    "instruments": [
+      "GC"
+    ],
+    "topics": [
+      "noise"
+    ],
+    "score": 0.014470764475745147,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0011076892099405506,
+    "r": "2026-10-02T12:36:03.200000000Z",
+    "job_id": "6383338ec5f36c1936975ca8414d47724b35688c6fb11561c311ef25df99051c",
+    "record": "Triage"
+  },
+  {
+    "id": "d07f49d31ebb8fdca8210e7de8c1e7be78c30d462602c73ba08ca5d717ddd1e8",
+    "doc_id": "7e008d51a6fc3d0eab92b3f9c30a58861ec1b7df33ebbfc5c6c601758ab36e1d",
+    "doc_version": 1,
+    "verdict": "None",
+    "instruments": [
+      "ES",
+      "NQ"
+    ],
+    "topics": [
+      "noise"
+    ],
+    "score": 0.010569510124609572,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0013212868438347604,
+    "r": "2026-10-04T10:00:05.300000000Z",
+    "job_id": "887144ea7824a8772778e9b749219b7e9ea4fe116190b93848391828550f824c",
+    "record": "Triage"
+  },
+  {
+    "id": "90f9783a6ebb941dc1d4f0e1d08e7ab72711d97981b8afa5c39ee4ce38db2422",
+    "doc_id": "46b19c3cb0e6aeaa99c8597393006bc743a2fd12050b9c9ac3553974d6024e09",
+    "doc_version": 1,
+    "verdict": "Commentary",
+    "instruments": [
+      "ZS"
+    ],
+    "topics": [
+      "commentary"
+    ],
+    "score": 0.2588047551041638,
+    "model": "gpt-6-luna",
+    "prompt_hash": "d2487efd02b822df598c3d968d34f3ac5058513e5967ad994f4b5295f4e2bea7",
+    "cost_usd": 0.0013294074966025066,
+    "r": "2026-10-03T22:10:05.400000000Z",
+    "job_id": "dea14a3923c2989bad59295db5392bf1b25052590da4e11da23babd43574711d",
+    "record": "Triage"
+  }
+]

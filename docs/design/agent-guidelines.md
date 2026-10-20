@@ -145,12 +145,12 @@ Unless the hypothesis states others (**checked**: a plan without `after` claims 
 
 ```
 claims {
-  survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after
+  survives_costs : bootstrap_sharpe on returns of base expect interval > 0 at 0.05 after
   not_overfit    : pbo on grid sens expect statistic < 0.5 after
 }
 ```
 
-and the forward plan carries `survives_costs` alone, re-tested on every reveal over the forward window (Q-5.1), with the (in-sample, forward) verdict pair as the record. A pairs plan adds the `before` claims of section 7; an idea stated with a Sharpe adds `dsr on returns of base expect statistic > 0.95 after` with the lineage's count (Q-3.2). Profit factor, trade counts and concentration are red-flag rows (section 12), not claims, until tests for them exist in the starting set (Q-4.5).
+`interval > 0` holds when the whole bootstrap interval of the Sharpe lies above zero (E-112); `interval excludes 0` held for a reliably negative Sharpe too, and is not the claim (changed Oct 20, 2026). The forward plan carries `survives_costs` alone, re-tested on every reveal over the forward window (Q-5.1), with the (in-sample, forward) verdict pair as the record. A pairs plan adds the `before` claims of section 7; an idea stated with a Sharpe adds `dsr on returns of base expect statistic > 0.95 after` with the lineage's count (Q-3.2). Profit factor, trade counts and concentration are red-flag rows (section 12), not claims, until tests for them exist in the starting set (Q-4.5).
 
 ---
 
@@ -274,7 +274,7 @@ study forward_<slug> {
   params     { <the submitted point> }
   holdout    after <H>
   budget     { money 0; bytes 2G; requests 0 }
-  claims     { survives_costs : bootstrap_sharpe on returns of base expect interval excludes 0 at 0.05 after }
+  claims     { survives_costs : bootstrap_sharpe on returns of base expect interval > 0 at 0.05 after }
   steps      { run base; report main }
 }
 ```
