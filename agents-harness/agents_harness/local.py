@@ -485,7 +485,7 @@ class LocalAbt:
 
     def _r_plan_run(self, body: dict[str, Any]) -> Any:
         path, files, study = self._plan_files(body)
-        kernels = "2" if available_gb() >= 24 else "1"  # grid points in parallel only with room for two bindings
+        kernels = "1"  # one binding per slot: two full-history bindings (5+ GB each) overran the 10 GB slot (Oct 20, 06:00)
         r = self._abt(["plan", "run", str(path), *files, *self.lib, "--data", self._data_for(body.get("programs") or {}), "--kernels", kernels, "--json"], timeout=3000)
         if r.returncode != 0:
             raise GatewayError("plan", failure_text(r, "abt plan run"))
