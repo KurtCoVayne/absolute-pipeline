@@ -4,7 +4,8 @@
 # Databento root (GLBX.MDP3, the live/ extension and the live-only roots,
 # ICE IFUS.IMPACT), the Norgate continuous futures and TradeStation, built
 # into /srv/absolute/store-full beside the live store. Each step waits for
-# 20 GB available and runs in a 20 GB memory scope: the live data service
+# its own measured peak plus 2 GB available and runs in a scope of its peak
+# plus 4 GB (peaks.txt): the live data service
 # and the quant runs come first. A step done before is skipped (its line in
 # the summary says exit 0). Usage: stage-full.sh norgate|dbn|live|ifus|bundles|all
 set -uo pipefail
@@ -13,12 +14,21 @@ STORE=${STORE:-/srv/absolute/store-full}
 LOGS=${LOGS:-/srv/absolute/logs/full}; mkdir -p "$LOGS" "$STORE"
 SUM="$LOGS/summary.log"; touch "$SUM"
 L=/srv/absolute/data/vendor/ndlake
-CAP=${CAP:-20G}
 # Sessions of every Databento ingest, CME and ICE alike (E-108): the daily break's middle at 17:45
 # New York and a 20-minute gap, so a bar in the break's first minute and the ES family's pre-2012
 # 30-minute break both end a trade date.
 DBN_SESSIONS="--session-break 17:45 --session-gap 20"
-memwait() { while [ "$(free -g | awk '/Mem/{print $7}')" -lt "${NEED_GB:-20}" ]; do sleep 30; done; }
+memwait() { while [ "$(free -g | awk '/Mem/{print $7}')" -lt "$1" ]; do sleep 30; done; }
+PEAKS=/srv/absolute/full/peaks.txt
+peak_gb() { # a step's measured peak in GB (peaks.txt, its latest line), else an estimate: a
+  # prefiltered root's kept rows at 0.45 GB a million plus 2.5, else PEAK_GB (8)
+  local name=$1 p done
+  p=$(awk -v n="$name" '$1 == n {v = $2} END {print v}' "$PEAKS" 2>/dev/null)
+  [ -n "$p" ] && { echo "$p"; return; }
+  done="/srv/absolute/full/outrights/GLBX.MDP3/ohlcv-1m/${name#dbn-}.FUT.done"
+  [[ $name == dbn-* ]] && [ -f "$done" ] && { awk '{printf "%d\n", $2 / 1e6 * 0.45 + 2.5}' "$done"; return; }
+  echo "${PEAK_GB:-8}"
+}
 done_before() { grep -q "^$1 exit 0" "$SUM"; }
 held() { # a root on hold (hold.txt: the roots whose sessions wait for an adapter fix)
   local root=${1##*-}
@@ -28,13 +38,27 @@ step() { # name, args...
   local name=$1; shift
   done_before "$name" && { echo "$name done before"; return 0; }
   held "$name" && { echo "$name held (hold.txt)"; return 0; }
-  memwait
-  local t0; t0=$(date +%s)
-  sudo systemd-run --scope -p MemoryMax=$CAP -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
-    /usr/bin/time -v eatmydata "$B" ingest --store "$STORE" "$@" > "$LOGS/$name.log" 2> "$LOGS/$name.time"
-  local code=$?
-  echo "$name exit $code wall $(( $(date +%s) - t0 ))s rss_kb $(grep 'Maximum resident' "$LOGS/$name.time" | awk '{print $NF}') $(date -u +%FT%TZ)" | tee -a "$SUM"
-  grep -v '^\s' "$LOGS/$name.time" | grep -i -E 'error|refus|killed' | head -3
+  # Each ingest waits for its own peak plus 2 GB available and runs in a scope
+  # of its peak plus 4 GB, so it can never take the data service down; killed
+  # at the scope, it runs again with 8 GB more (twice at most). One ingest of
+  # these drivers at a time, whichever store: two waiting on memory would
+  # both see it free and start together.
+  local peak code t0 rss try
+  peak=$(peak_gb "$name")
+  for try in 1 2 3; do
+    exec 9>>/srv/absolute/full/ingest.lock; flock 9
+    memwait $(( peak + 2 ))
+    t0=$(date +%s)
+    sudo systemd-run --scope -p MemoryMax=$(( peak + ${HEADROOM:-4} ))G -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
+      /usr/bin/time -v eatmydata "$B" ingest --store "$STORE" "$@" > "$LOGS/$name.log" 2> "$LOGS/$name.time"
+    code=$?
+    flock -u 9
+    rss=$(grep 'Maximum resident' "$LOGS/$name.time" | awk '{print $NF}')
+    echo "$name exit $code wall $(( $(date +%s) - t0 ))s rss_kb $rss cap $(( peak + ${HEADROOM:-4} ))G $(date -u +%FT%TZ)" | tee -a "$SUM"
+    grep -v '^\s' "$LOGS/$name.time" | grep -i -E 'error|refus|killed' | head -3
+    case $code in 137|143) peak=$(( peak + 8 ));; *) break;; esac
+  done
+  [ "$code" = 0 ] && [ -n "$rss" ] && echo "$name $(( (rss + 1048575) / 1048576 ))" >> "$PEAKS"
   return 0
 }
 LISTS='S&P 500=SPX;S&P MidCap 400=SP400;S&P SmallCap 600=SP600;S&P Composite 1500=SP1500;S&P 100=SP100;Russell 3000=R3000;Russell 1000=R1000;Russell 2000=R2000;Russell Mid Cap=RMID;Russell Micro Cap=RMICRO;Russell Top 200=RTOP200;Russell 1000 + 2000 + Micro Cap Superset=RALL;Nasdaq Composite=NASDAQ;Nasdaq 100=NDX;Nasdaq Biotechnology=NBI;NYSE Composite=NYSE;Dow Jones Industrial Average=DJIA;S&P 500 Dividend Aristocrats=SPDA'
@@ -52,8 +76,8 @@ dbn_views() { # dataset dir, views dir
     [ -f "$V/definition/$r.parquet" ] || { echo "$r: no definition" | tee -a "$SUM"; continue; }
     mkdir -p "$VIEWS/$r/definition" "$VIEWS/$r/ohlcv-1m"
     ln -sfn "$V/definition/$r.parquet" "$VIEWS/$r/definition/$r.parquet"
-    local bars="$V/ohlcv-1m/$r.FUT" filt="/srv/absolute/full/filtered/$(basename "$V")/ohlcv-1m/$r.FUT"
-    # A root prefiltered to its defined (outright) contracts reads the filtered day files.
+    local bars="$V/ohlcv-1m/$r.FUT" filt="/srv/absolute/full/outrights/$(basename "$V")/ohlcv-1m/$r.FUT"
+    # A root prefiltered to its outright contracts (prefilter_outrights.py) reads the filtered day files.
     [ -d "$filt" ] && [ -f "$filt.done" ] && bars="$filt"
     ln -sfn "$bars" "$VIEWS/$r/ohlcv-1m/$r.FUT"
     echo "$r"
@@ -73,7 +97,6 @@ dbn() {
 }
 live() {
   for r in $(dbn_views /srv/absolute/data/vendor/dbn-live/GLBX.MDP3 /srv/absolute/full/views-live); do
-    [ "$r" = SOL ] && [ -z "${SOL_FIXED:-}" ] && { echo "live-SOL deferred: the continuous series stops at its first roll (adapter fix pending)" | tee -a "$SUM"; continue; }
     step "live-$r" --adapter databento --from "/srv/absolute/full/views-live/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/live-$r-report.json"
   done
 }
@@ -82,8 +105,8 @@ ifus() {
     step "ifus-$r" --adapter databento --from "/srv/absolute/full/views-ifus/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/ifus-$r-report.json"
   done
 }
-bundles() { # bundle_v2 directories under /srv/absolute/full/bundles/<source>/<name>
-  for d in /srv/absolute/full/bundles/*/*; do
+bundles() { # bundle_v2 directories under /srv/absolute/full/bundles/<source>/<name> (BUNDLES: a narrower glob)
+  for d in ${BUNDLES:-/srv/absolute/full/bundles/*/*}; do
     [ -f "$d/manifest.json" ] || continue
     local src; src=$(basename "$(dirname "$d")")
     step "bundle-$src-$(basename "$d")" --adapter bundle_v2 --from "$d" --class future --source "$src" --attributes reviewed=complete

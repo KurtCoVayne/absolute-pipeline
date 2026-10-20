@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""A root's Databento day files reduced to the bars of the instruments its definition file
-defines (the outright contracts: spreads and undefined instruments are what the adapter's
-`--undefined drop` drops anyway), so a large root's ingest holds a fraction of the rows in
-memory. The kept rows are byte-identical in content; the adapter's report counts fewer drops.
+"""A root's Databento day files reduced to the bars of its outright contracts, recognised by
+the raw symbol (root, month code, one- or two-digit year: `RBZ8`, `CLF26`), so a large root's
+ingest holds a fraction of the rows in memory. Spreads, butterflies and inter-commodity pairs
+are what the adapter drops anyway; an outright the definition file lacks is kept, for the
+adapter's synthesized definition (E-104). The kept rows are byte-identical in content; the
+adapter's report counts fewer drops.
 Usage: prefilter_outrights.py DATASET_DIR ROOT OUT_DIR"""
+import re
 import sys
 from pathlib import Path
 
@@ -11,7 +14,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 src, root, out = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3])
-ids = pq.read_table(src / "definition" / f"{root}.parquet", columns=["instrument_id"]).column("instrument_id")
+outright = f"^{re.escape(root)}[FGHJKMNQUVXZ][0-9]{{1,2}}$"
 dst = out / "ohlcv-1m" / f"{root}.FUT"
 dst.mkdir(parents=True, exist_ok=True)
 (out / "definition").mkdir(parents=True, exist_ok=True)
@@ -21,7 +24,7 @@ if not link.exists():
 n_in = n_out = 0
 for f in sorted((src / "ohlcv-1m" / f"{root}.FUT").glob("*.parquet")):
     t = pq.read_table(f)
-    k = t.filter(pc.is_in(t.column("instrument_id"), value_set=ids))
+    k = t.filter(pc.match_substring_regex(t.column("symbol"), outright))
     n_in += t.num_rows
     n_out += k.num_rows
     pq.write_table(k, dst / f.name, compression="zstd")
