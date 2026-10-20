@@ -231,8 +231,12 @@ class Post:
         if st in ("not_testable", "no_hypothesis", "no_data", "failed", "could_not_check", "no_decisions", "budget", "error"):
             label = {"no_hypothesis": "no testable idea", "not_testable": "not testable"}.get(st, st.replace("_", " "))
             return "no", f"{label}: {reason}" if reason else label
+        if st == "waiting_data":
+            return "pend", f"waiting for data: {reason}" if reason else "waiting for data"
         if st in ("full", "done") and not self.report:
             return "pend", "backtest finished, report pending"
+        if st == "running":
+            return "pend", f"running: {reason}" if reason else "running"
         return "pend", f"pending ({self.status.get('stage') or 'queued'})"
 
 
