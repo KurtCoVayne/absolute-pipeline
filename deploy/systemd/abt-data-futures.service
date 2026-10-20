@@ -6,7 +6,8 @@ After=network-online.target
 User=ubuntu
 LimitMEMLOCK=infinity
 LimitNOFILE=1048576
-Environment=ABT_STORE=/srv/absolute/store-futures-serve
+# A symlink to the latest numbered Databento snapshot (store-futures-serve-N): repoint, then restart.
+Environment=ABT_STORE=/srv/absolute/store-futures-current
 # The resident cache of decoded partitions (D-3.4).
 Environment=ABT_RESIDENT_BUDGET=6442450944
 # glibc heap arenas held 10 GB of a 2 GB-budget service (E-110): two arenas.

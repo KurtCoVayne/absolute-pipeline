@@ -2,7 +2,8 @@
 # Every pending post on gpt-6.1-sol against the Databento futures store (the owner, Oct 20: futures from
 # Databento only). Requeues the jobs the 04:30 out-of-memory kill left "running", and the full backtests
 # made on Norgate's futures (set aside in the attic, not deleted); then one queue of quant jobs, six at a time.
-#   FUTURES_STORE=/srv/absolute/store-futures-serve-2 bash deploy/run-sol-databento.sh
+#   FUTURES_STORE=/srv/absolute/store-futures-current bash deploy/run-sol-databento.sh
+#   ONLY_MARKETS='\b(ES|NQ|SPY|QQQ)\b' OTHER_MARKETS='\b(CL|GC)\b' …: only the posts on the snapshot's markets now
 set -uo pipefail
 : "${FUTURES_STORE:?the Databento snapshot the futures service serves}"
 export FUTURES_STORE FUTURES_SOCK=${FUTURES_SOCK:-/srv/absolute/run/futures.sock}
@@ -28,6 +29,22 @@ for f in sorted(glob.glob("*/status.json")):
             reason = "requeued on Databento futures (the Norgate backtest is in the attic)" if norgate else "requeued after the 04:30 out-of-memory kill"
             json.dump({"state": "queued", "stage": "quant", "reason": reason}, open(f"{p}/status.json", "w"))
         out.append(p)
+# ONLY_MARKETS (a regex): run now only the posts whose hypothesis names a market the snapshot holds;
+# the others stay queued for the next snapshot.
+import re
+pat = os.environ.get("ONLY_MARKETS")
+if pat:
+    other = re.compile(os.environ.get("OTHER_MARKETS", "$^"), re.I)
+    keep = []
+    for p in out:
+        try:
+            h = json.load(open(f"{p}/hypothesis.json"))
+        except Exception:
+            continue
+        text = " ".join(str(h.get(k) or "") for k in ("universe", "statement", "signal", "instrument"))
+        if re.search(pat, text, re.I) and not other.search(text):
+            keep.append(p)
+    out = keep
 print(",".join(out))
 EOF
 )
