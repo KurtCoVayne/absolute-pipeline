@@ -179,7 +179,7 @@ Each cut made at 17:52, and what it blocks:
 
 ## The pull requests and the page
 
-- Amendments: https://github.com/KurtCoVayne/absolute-backtest/pull/76, merged Oct 20 15:01 UTC (1958b9f, CI green)
+- Amendments: https://github.com/KurtCoVayne/absolute-backtest/pull/76, merged Oct 20 15:01 UTC (1958b9f, CI green); then #77 (E-122, E-123: an ingest builds only the instruments it writes; a segment no longer dropped at rotation) merged 34c081c, and #78 (E-124: `minutes(n)` / `hours(n)` calendars for N-hour bars) merged cc3edc8. E-125 (an open replays every log row since the least tail: ~126M rows, ~5 GB, on the futures store) is the ingest's and the futures service's remaining store-sized memory, in progress
 - The pipeline: https://github.com/KurtCoVayne/absolute-pipeline/pull/1, merged Oct 20 14:23 UTC (e722ba9); what followed on `iter/01-mvp` (the signed-in site, the queue's fixes, this report's last sections) in https://github.com/KurtCoVayne/absolute-pipeline/pull/2
 - The page: **https://backtests.signoscapital.com**, after Google sign-in with a `@signoscapital.com` account (PL-D29). The owner signed in and confirmed the pages on Oct 20. Each post links to its page: the tweet, the idea and its assumptions, the analysis, the program and plan as run, the equity and drawdown charts with the held-out part shaded, the full / in-sample / out-of-sample table, contribution by market and year, the sensitivity grid, the red flags, the author's numbers beside ours, the verdict.
 - Run the queued posts on `gpt-6.1-sol` against the served Databento snapshot: `scripts/aws/ssh.sh 'cd /srv/absolute/absolute-pipeline && FUTURES_STORE=/srv/absolute/store-futures-current bash deploy/run-sol-databento.sh'`. The OpenAI guard stops at $45 of every recorded job.
