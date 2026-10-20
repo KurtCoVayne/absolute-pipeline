@@ -43,7 +43,9 @@ HARNESS = P / "agents-harness"
 PY = str(S / "venv" / "bin" / "python")
 SEED = S / "data" / "seed"
 ABT = str(S / "absolute-backtest" / "target" / "release" / "abt")
-STORE = os.environ.get("FUTURES_STORE", str(S / "store"))
+# Futures from the Databento snapshot by default: the main store's futures lost GC and ZF to E-121 and hold
+# near-empty roots from before E-104 (registry check, Oct 20); its equities are complete and stay there.
+STORE = os.environ.get("FUTURES_STORE", str(S / "store-futures-current"))
 
 LOCK = threading.Lock()
 SPENT = {"usd": 0.0}
@@ -105,27 +107,16 @@ def seed_rows(lists: str = POST_LISTS) -> list[dict[str, str]]:
 
 
 def staged_roots() -> list[str]:
-    """The futures roots the futures store holds: its `continuous` roots named by `ticker` when FUTURES_STORE
-    names a store, else the old staging logs' roots (the first store)."""
-    if os.environ.get("FUTURES_STORE"):
-        q = lambda text: subprocess.run([ABT, "data", "query", "--store", STORE, text], capture_output=True, text=True, cwd="/tmp", timeout=600).stdout  # noqa: E731
-        rows = lambda text: [c for c in ([x.strip() for x in ln.split("|")] for ln in text.splitlines()) if len(c) >= 2 and c[0][:1].isdigit()]  # noqa: E731
-        ids = {r[0] for r in rows(q(f"continuous latest at {now()}"))}
-        return sorted({r[2] for r in rows(q("ticker")) if len(r) >= 3 and r[0] in ids and r[2]})
-    roots = []
-    for log in (S / "logs" / "dbn" / "summary.log", S / "logs" / "dbn-live" / "summary.log"):
-        if not log.exists():
-            continue
-        for line in log.read_text(encoding="utf-8").splitlines():
-            parts = line.split()
-            if len(parts) >= 3 and parts[1] == "exit" and parts[2] == "0":
-                roots.append(parts[0])
-    return sorted(set(roots))
+    """The futures roots the futures store holds: its `continuous` roots named by `ticker`."""
+    q = lambda text: subprocess.run([ABT, "data", "query", "--store", STORE, text], capture_output=True, text=True, cwd="/tmp", timeout=600).stdout  # noqa: E731
+    rows = lambda text: [c for c in ([x.strip() for x in ln.split("|")] for ln in text.splitlines()) if len(c) >= 2 and c[0][:1].isdigit()]  # noqa: E731
+    ids = {r[0] for r in rows(q(f"continuous latest at {now()}"))}
+    return sorted({r[2] for r in rows(q("ticker")) if len(r) >= 3 and r[0] in ids and r[2]})
 
 
 def entity_names() -> dict[str, str]:
     """The data layer's ids and their latest symbol (equities, contracts and the continuous roots)."""
-    cache = S / "direct" / (f"ticker-{Path(STORE).name}.json" if os.environ.get("FUTURES_STORE") else "ticker.json")
+    cache = S / "direct" / f"ticker-{Path(os.path.realpath(STORE)).name}.json"  # one per snapshot: ids grow with roots
     if cache.exists():
         return load(cache) or {}
     r = subprocess.run([ABT, "data", "query", "--store", STORE, "ticker"], capture_output=True, text=True, cwd="/tmp", timeout=600)
@@ -231,8 +222,8 @@ def run_quant(jd: Path, roots: list[str], key: str, wall_s: float) -> int | None
             "ABT_ROOTS": ",".join(roots),
             "ABT_BIN": "/usr/local/bin/abt-slot",  # the machine's shared, memory-capped slots
             "ABT_STORE": os.environ.get("FUTURES_STORE", STORE),
-            "ABT_DATA": os.environ.get("FUTURES_SOCK", str(S / "run" / "data.sock")),
-            "ABT_TICKERS": str(S / "direct" / (f"ticker-{Path(STORE).name}.json" if os.environ.get("FUTURES_STORE") else "ticker.json")),
+            "ABT_DATA": os.environ.get("FUTURES_SOCK", str(S / "run" / "futures.sock")),
+            "ABT_TICKERS": str(S / "direct" / f"ticker-{Path(os.path.realpath(STORE)).name}.json"),
             "ABT_DATA_DAILY": str(S / "run" / "norgate-futures.sock"),
             "OPENAI_API_KEY": key,
             "OPENAI_BASE_URL": "https://api.openai.com/v1",

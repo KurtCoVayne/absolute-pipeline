@@ -158,10 +158,10 @@ class LocalAbt:
         self.bin = os.environ.get("ABT_BIN", "/srv/absolute/absolute-backtest/target/release/abt")
         lib = os.environ.get("ABT_LIB", "/srv/absolute/absolute-backtest/corpus-v2/catalog/*.dsl /srv/absolute/absolute-backtest/corpus-v2/lib/*.dsl")
         self.lib: list[str] = sorted(p for pat in lib.split() for p in glob.glob(pat))
-        self.data = os.environ.get("ABT_DATA", "/srv/absolute/run/data.sock")
+        self.data = os.environ.get("ABT_DATA", "/srv/absolute/run/futures.sock")  # the Databento futures snapshot
         # Norgate's daily continuous futures (`<ROOT>_N`, one bar a session from each root's inception) on their own service.
         self.daily = os.environ.get("ABT_DATA_DAILY", "/srv/absolute/run/norgate-futures.sock")
-        self.store = os.environ.get("ABT_STORE", "/srv/absolute/store")
+        self.store = os.environ.get("ABT_STORE", "/srv/absolute/store-futures-current")
         self.daily_store = os.environ.get("ABT_STORE_DAILY", "/srv/absolute/store-norgate-futures")
         # Norgate's equities: every US list and ETF from 1990, and the daily index series, on their own service.
         # Off (the S&P 500 since 2014 in the main store) until the equity service's memory is bounded: ABT_EQUITY_FULL=1.
