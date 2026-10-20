@@ -4,15 +4,21 @@
 # the data service: waits for a free slot, then runs
 # /srv/absolute/absolute-backtest/target/release/abt "$@" under the cap.
 #   abt-slot plan run study.study prog.dsl <library> --data /srv/absolute/run/data.sock --kernels 2 --json
+# A large ingest reserves memory by writing a number of slots to withhold in
+# /srv/absolute/locks/reserve (removed when it ends); new runs then take only
+# the remaining slots. Runs are the out-of-memory killer's first choice
+# (oom_score_adj 500): a run reruns in minutes, an ingest does not.
 SLOTS=${SLOTS:-5}; CAP=${CAP:-10G}
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 ABT=/srv/absolute/absolute-backtest/target/release/abt
 mkdir -p /srv/absolute/locks
 while true; do
-  for i in $(seq 1 "$SLOTS"); do
+  withhold=$(cat /srv/absolute/locks/reserve 2>/dev/null | tr -cd 0-9); withhold=${withhold:-0}
+  n=$((SLOTS - withhold)); [ "$n" -lt 1 ] && n=1
+  for i in $(seq 1 "$n"); do
     exec 9>"/srv/absolute/locks/slot-$i"
     if flock -n 9; then
-      exec systemd-run --user --scope --quiet -p MemoryMax="$CAP" -p MemorySwapMax=0 "$ABT" "$@"
+      exec systemd-run --user --scope --quiet -p MemoryMax="$CAP" -p MemorySwapMax=0 choom -n 500 -- "$ABT" "$@"
     fi
     exec 9>&-
   done
