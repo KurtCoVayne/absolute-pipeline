@@ -54,7 +54,7 @@ def test_query_run_reruns_the_runs_program_at_its_point_over_its_window(tmp_path
     assert calls[-1][calls[-1].index("--start") + 1] == "2025-01-02"
 
 
-def test_no_window_cap_and_daily_programs_read_the_norgate_store(tmp_path: Path, monkeypatch: Any) -> None:
+def test_no_window_cap_and_futures_read_databento_only(tmp_path: Path, monkeypatch: Any) -> None:
     from agents_harness.gateway import GatewayError
     from agents_harness.local import reads_minutes
 
@@ -69,6 +69,9 @@ def test_no_window_cap_and_daily_programs_read_the_norgate_store(tmp_path: Path,
     # The owner's rule: as much history as the store holds, daily or intraday.
     assert b.guard_plan(plan, {"d_moo.dsl": daily}) == plan
     assert b.guard_plan(plan, {"i.dsl": intraday}) == plan
-    assert b._data_for({"d_moo.dsl": "strategy d_moo { universe { instruments { ES_N from 1997-09-09 } } }"}) == b.daily
+    # Futures are Databento only (the owner, Oct 20): a Norgate root routes nowhere else unless ABT_NORGATE_FUTURES=1.
+    monkeypatch.delenv("ABT_NORGATE_FUTURES", raising=False)
+    assert b._data_for({"d_moo.dsl": "strategy d_moo { universe { instruments { ES_N from 1997-09-09 } } }"}) == b.data
+    assert b.daily_roots() == []
     assert b._data_for({"d_moo.dsl": daily}) == b.data
     assert b._data_for({"e.dsl": equity}) == b.equity_data

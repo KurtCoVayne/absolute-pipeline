@@ -164,8 +164,10 @@ class LocalAbt:
         self.store = os.environ.get("ABT_STORE", "/srv/absolute/store")
         self.daily_store = os.environ.get("ABT_STORE_DAILY", "/srv/absolute/store-norgate-futures")
         # Norgate's equities: every US list and ETF from 1990, and the daily index series, on their own service.
-        self.equity_data = os.environ.get("ABT_DATA_EQUITY", "/srv/absolute/run/equities.sock")
-        self.equity_store = os.environ.get("ABT_STORE_EQUITY", "/srv/absolute/store-full")
+        # Off (the S&P 500 since 2014 in the main store) until the equity service's memory is bounded: ABT_EQUITY_FULL=1.
+        self.equity_full = os.environ.get("ABT_EQUITY_FULL") == "1"
+        self.equity_data = os.environ.get("ABT_DATA_EQUITY", "/srv/absolute/run/equities.sock") if self.equity_full else self.data
+        self.equity_store = os.environ.get("ABT_STORE_EQUITY", "/srv/absolute/store-full") if self.equity_full else self.store
         self.work = work or Path(os.environ.get("ABT_WORK", "/tmp/abt-work"))
         self.work.mkdir(parents=True, exist_ok=True)
         self.roots = [r for r in os.environ.get("ABT_ROOTS", "").split(",") if r]
@@ -233,17 +235,14 @@ class LocalAbt:
                 out["note"] = f"{value} is not a staged root; staged: {','.join(self.roots)}"
             out["bars"] = "back-adjusted continuous series per root at @1m from 2010-06-07 (intraday ideas); daily views by `@session` on a `sessions` calendar"
             daily = [r for r in self.daily_roots() if not value or r in (value, f"{value}_N", f"{value}_U")]
-            out["daily_roots"] = daily
+            if daily:
+                out["daily_roots"] = daily
             out["daily"] = (
-                "DAILY ideas use Norgate's continuous futures from each root's inception (1977 for the oldest; ES 1997): "
-                "`<ROOT>_N` back-adjusted (trade and size on it), `<ROOT>_U` unadjusted (levels and ratios) where listed; "
-                "one bar per session with point_value and tick; `universe { instruments { ES_N from <date> } }`, `need bars @1d`; "
-                "in a query `for n:ES` (the vendor key). The harness runs a program naming `_N` roots on that store."
+                "DAILY ideas run on the same Databento roots: a `sessions` calendar and `decide on session`, the session's bars "
+                "rolled up from minutes, from each root's first date (2010-06-07 for most) to H."
             )
-            if value and not roots and daily:
-                out["note"] = f"{value} is not in the minute store; daily: {', '.join(daily)}"
         elif cls == "equity":
-            out["universe"] = (
+            out["universe"] = 'Norgate: every S&P 500 member since 2014-01-01, as of each day (member(A, T, "SPX")), daily bars' if not self.equity_full else (
                 'Norgate: every US-listed stock and ETF, current and delisted, daily bars from 1990-01-02, point in time; lists by day '
                 '(member(A, T, "<LIST>")): RALL, R3000, R2000, R1000, RMID, RMICRO, RTOP200, SPX, SP100, SP400, SP600, SP1500, NDX, NASDAQ, NYSE, DJIA, NBI, ETF; '
                 'index series by `need series "<NAME>" @1d` (VIX_D, SPX, SPXTR, NDX, RUT …)'
@@ -295,7 +294,10 @@ class LocalAbt:
         return {"class": cls, "relations": sigs or [f"no catalog file for class {cls}"], "futures_roots_staged": self.roots if cls == "future" else None}
 
     def daily_roots(self) -> list[str]:
-        """Norgate's daily continuous series in the daily store (`ES_N`, `ES_U`, …), from its ticker registry."""
+        """Norgate's daily continuous series in the daily store (`ES_N`, `ES_U`, …), from its ticker registry;
+        none unless `ABT_NORGATE_FUTURES=1`: the owner's rule (Oct 20) is futures from Databento only."""
+        if os.environ.get("ABT_NORGATE_FUTURES") != "1":
+            return []
         if getattr(self, "_daily", None) is None:
             try:
                 r = self._abt(["data", "query", "--store", self.daily_store, "ticker"], timeout=600)
@@ -459,7 +461,8 @@ class LocalAbt:
         texts = [str(t) for t in (programs.values() if isinstance(programs, dict) else [programs])]
         if any(re.search(r"\bclass\s+equity\b", t) for t in texts):
             return self.equity_data
-        return self.daily if any(_NORGATE_ROOT.search(t) for t in texts) else self.data
+        norgate = os.environ.get("ABT_NORGATE_FUTURES") == "1" and any(_NORGATE_ROOT.search(t) for t in texts)
+        return self.daily if norgate else self.data
 
     def _plan_files(self, body: dict[str, Any]) -> tuple[Path, list[str], str]:
         programs = {str(k): str(v) for k, v in (body.get("programs") or {}).items()}

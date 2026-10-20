@@ -66,7 +66,7 @@ NOT_HELD = [
     "market breadth (advance/decline, new highs/lows)",
     "fundamentals, earnings dates, analyst estimates",
     "crypto spot prices, on-chain data, altcoin indexes (only the CME BTC, ETH and SOL futures, when listed below)",
-    "non-US single stocks; non-US indexes unless a daily future below is one (FESX_N is the Euro Stoxx 50, FDAX_N the DAX …)",
+    "non-US single stocks; non-US indexes and their futures (no Euro Stoxx, DAX, FTSE, Nikkei on SGX, Hang Seng)",
     "macro series (Treasury yield curves, PMIs, money supply) beyond the rate futures listed",
 ]
 
@@ -155,9 +155,12 @@ def render_data_map(roots: list[tuple[str, str]], *, equity_span: str = "1990-01
         f"**Futures** ({len(roots)} roots staged; back-adjusted continuous series per root, minute bars rolled up to sessions and days, from the date shown to 2026-08-14):",
         " ".join(f"{sym} ({first})" for sym, first in roots),
         "",
-        f"**Equities**: every US-listed stock and ETF, current and delisted (Norgate, point in time), daily bars {equity_span}, with splits, dividends, delistings, "
+        (f"**Equities**: every US-listed stock and ETF, current and delisted (Norgate, point in time), daily bars {equity_span}, with splits, dividends, delistings, "
         "index membership by day (Russell 3000/2000/1000, S&P 500/400/600/1500/100, Nasdaq-100, NYSE, Nasdaq, Dow, ETFs), daily index series "
-        "(VIX, SPX, SPX total return, NDX, RUT, DJI and others), and GICS sector, industry group, industry and sub-industry from one snapshot dated 2026-09-21 (no rows before it).",
+        "(VIX, SPX, SPX total return, NDX, RUT, DJI and others), and GICS sector, industry group, industry and sub-industry from one snapshot dated 2026-09-21 (no rows before it)."
+        if os.environ.get("ABT_EQUITY_FULL") == "1" else
+        "**Equities**: the S&P 500's members, current and past, daily bars 2014-01-02 .. 2026-10-14, with splits, dividends, delistings and index membership by day; "
+        "ETFs and stocks outside the S&P 500 are not served yet (the full US store is being bounded): map an ETF to its future (QQQ → NQ, SPY → ES, IWM → RTY, GLD → GC, TLT → ZB)."),
         "",
         "**Not held**: " + "; ".join(NOT_HELD) + ".",
         "",
@@ -171,11 +174,8 @@ def render_data_map(roots: list[tuple[str, str]], *, equity_span: str = "1990-01
 def build_data_map(h: str) -> tuple[str, list[str]]:
     q = lambda text: subprocess.run([ABT, "data", "query", "--store", STORE, text], capture_output=True, text=True, cwd="/tmp", timeout=600).stdout  # noqa: E731
     roots = roots_from_rows(parse_rows(q(f"continuous latest at {h}")), parse_rows(q("ticker")))
-    # Norgate's daily continuous futures, one bar a session from each root's inception (served apart).
-    n = subprocess.run([ABT, "data", "query", "--store", NORGATE_FUTURES, "ticker"], capture_output=True, text=True, cwd="/tmp", timeout=600).stdout
-    daily = sorted(set(re.findall(r"\b([A-Z][A-Z0-9]*_N)\b", n)))
-    extra = f"\nDaily futures (Norgate, one bar a session from each root's inception, as early as 1977): {', '.join(daily)}. A daily idea on any of these markets is testable.\n" if daily else ""
-    return render_data_map(roots) + extra, [r[0] for r in roots]
+    # Futures are Databento only (the owner, Oct 20): Norgate's continuous futures are not offered.
+    return render_data_map(roots), [r[0] for r in roots]
 
 
 # ---------------------------------------------------------------- images
