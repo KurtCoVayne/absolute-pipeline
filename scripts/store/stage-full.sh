@@ -96,13 +96,27 @@ dbn() {
   done
 }
 live() {
-  for r in $(dbn_views /srv/absolute/data/vendor/dbn-live/GLBX.MDP3 /srv/absolute/full/views-live); do
+  for r in $(dbn_views /srv/absolute/data/vendor/dbn-live/GLBX.MDP3 /srv/absolute/full/views-live | order); do
     step "live-$r" --adapter databento --from "/srv/absolute/full/views-live/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/live-$r-report.json"
   done
 }
 ifus() {
-  for r in $(dbn_views /srv/absolute/data/vendor/dbn-ifus/IFUS.IMPACT /srv/absolute/full/views-ifus); do
+  for r in $(dbn_views /srv/absolute/data/vendor/dbn-ifus/IFUS.IMPACT /srv/absolute/full/views-ifus | order); do
     step "ifus-$r" --adapter databento --from "/srv/absolute/full/views-ifus/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/ifus-$r-report.json"
+  done
+}
+extra() { # the coordinator's extra pull (dbn-extra, Oct 20): GLBX roots, then IFUS roots
+  for r in $(dbn_views /srv/absolute/data/vendor/dbn-extra/GLBX.MDP3 /srv/absolute/full/views-extra | order); do
+    step "extra-$r" --adapter databento --from "/srv/absolute/full/views-extra/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/extra-$r-report.json"
+  done
+  for r in $(dbn_views /srv/absolute/data/vendor/dbn-extra/IFUS.IMPACT /srv/absolute/full/views-extra-ifus | order); do
+    step "extra-$r" --adapter databento --from "/srv/absolute/full/views-extra-ifus/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/extra-$r-report.json"
+  done
+}
+comb() { # a root's history and live/ in one view (combine_views.py), so one ingest back-adjusts the whole span
+  for r in ${ONLY:-}; do
+    [ -d "/srv/absolute/full/views-combined/$r" ] || { echo "comb-$r: no combined view" | tee -a "$SUM"; continue; }
+    step "comb-$r" --adapter databento --from "/srv/absolute/full/views-combined/$r" --class future --undefined drop $DBN_SESSIONS --report "$LOGS/comb-$r-report.json"
   done
 }
 bundles() { # bundle_v2 directories under /srv/absolute/full/bundles/<source>/<name> (BUNDLES: a narrower glob)
@@ -113,7 +127,7 @@ bundles() { # bundle_v2 directories under /srv/absolute/full/bundles/<source>/<n
   done
 }
 case "${1:-all}" in
-  norgate) norgate;; dbn) dbn;; live) live;; ifus) ifus;; bundles) bundles;;
+  norgate) norgate;; dbn) dbn;; live) live;; ifus) ifus;; extra) extra;; comb) comb;; bundles) bundles;;
   all) norgate; bundles; dbn; live; ifus;;
 esac
 sync
