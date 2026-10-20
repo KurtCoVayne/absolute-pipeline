@@ -1,0 +1,22 @@
+[Unit]
+Description=oauth2-proxy: Google sign-in (@signoscapital.com) in front of the backtest site
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+# The config holds the OAuth client secret and the cookie secret: root's 0600 file, handed to
+# the service as a systemd credential, never on a command line or in the unit.
+LoadCredential=oauth2-proxy.cfg:/etc/absolute-pipeline/oauth2-proxy.cfg
+ExecStart=/bin/sh -c 'exec /usr/local/bin/oauth2-proxy --config "$CREDENTIALS_DIRECTORY/oauth2-proxy.cfg"'
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+StandardOutput=append:/srv/absolute/logs/oauth2-proxy.log
+StandardError=append:/srv/absolute/logs/oauth2-proxy.log
+
+[Install]
+WantedBy=multi-user.target

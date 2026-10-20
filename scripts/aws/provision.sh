@@ -54,8 +54,9 @@ if [ "$CURRENT" != "[]" ]; then
 fi
 aws ec2 authorize-security-group-ingress --group-id "$SG" --ip-permissions \
   "[{\"IpProtocol\":\"tcp\",\"FromPort\":22,\"ToPort\":22,\"IpRanges\":[{\"CidrIp\":\"$MY_IP/32\",\"Description\":\"owner\"}]},
-    {\"IpProtocol\":\"tcp\",\"FromPort\":80,\"ToPort\":80,\"IpRanges\":[{\"CidrIp\":\"$MY_IP/32\",\"Description\":\"owner, the seed site\"}]}]" >/dev/null
-echo "security group $SG: tcp/22 and tcp/80 (the seed site) from $MY_IP/32 only"
+    {\"IpProtocol\":\"tcp\",\"FromPort\":80,\"ToPort\":80,\"IpRanges\":[{\"CidrIp\":\"0.0.0.0/0\",\"Description\":\"the site: ACME challenge and redirect to https\"}]},
+    {\"IpProtocol\":\"tcp\",\"FromPort\":443,\"ToPort\":443,\"IpRanges\":[{\"CidrIp\":\"0.0.0.0/0\",\"Description\":\"the site behind Google sign-in (PL-D29)\"}]}]" >/dev/null
+echo "security group $SG: tcp/22 from $MY_IP/32 only; tcp/80 and tcp/443 open (Caddy and oauth2-proxy guard the site)"
 
 # The instance.
 load_state

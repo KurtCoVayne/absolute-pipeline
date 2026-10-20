@@ -1,0 +1,10 @@
+# The backtest site behind Google sign-in (PL-D29): TLS with an automatic Let's Encrypt
+# certificate, HTTP redirected to HTTPS, every request through oauth2-proxy. No other host
+# is served, so the bare IP gets nothing. Installed as /etc/caddy/Caddyfile by deploy/web-up.sh.
+backtests.signoscapital.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:4180
+	log {
+		output file /var/log/caddy/backtests.log
+	}
+}
