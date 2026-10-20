@@ -1,6 +1,6 @@
 ---
 name: write-strategy
-version: 7
+version: 8
 ---
 # Write the strategy: the protocol as a loop
 
@@ -29,11 +29,11 @@ Read the hypothesis (statement, universe, signal and what is **not stated**, hor
 
 ## Step 2 · Translate
 
-Write the program from `abt-idioms` §1 (daily) or §2 (intraday): the author's parameters as the base point in `params` with ranges for the two the grid varies; house sizing. `check(program, name)`; fix every error; at most 8 checks. The text you run must be the text that checked clean. Keep the `program_hash`.
+Write the program from `abt-idioms` §1 (daily) or §2 (intraday): the author's parameters as the base point in `params` with ranges for the two the grid varies; house sizing. `check(program, name)`; fix every error; at most 12 checks. The text you run must be the text that checked clean. Keep the `program_hash`.
 
 ## Step 3 · Translation check (the notes must carry it)
 
-A short plan on the first root whose window is the last few months before `H` (every plan ends at `H`), `observe` the ATR, the size, the signal. `plan_run`, then `query_run(run_id, "ledger fill")` and `query_run(run_id, "? atr(A, T, V) over <dates>")`. If `decisions = 0`: `query_run(run_id, "coverage over <window>")`, fix, re-check. Recompute two trades by hand to the cent in a note headed `## Translation check`: contracts × (exit − entry) × point value − 2 × contracts × 3.75 = the ledger's P&L.
+A short plan on the first root whose window is the last year or two before `H` (every plan ends at `H`; pick a stretch where the rule fires), `observe` the ATR, the size, the signal. `plan_run`, then `query_run(run_id, "ledger fill")` (the fills: time, instrument, quantity, price) and `query_run(run_id, "? atr(A, T, V) over <D1> .. <D2>")`. A bar of a sessions calendar is labelled at the session's close (ES: 21:00 UTC in summer, 22:00 in winter): ask `over` a range, or `at` the exact close the error names, never a bare date. A rule that exits at a session's close runs in a strategy named `<slug>_moc` with `execution futures_house with { orders moc }`; at the next open, `_moo` with `orders moo`: a `moc` order on a `moo` strategy waits for the next session. If `decisions = 0`: `query_run(run_id, "coverage over <window>")`, fix, re-check. Recompute two trades by hand to the cent in a note headed `## Translation check`: contracts × (exit − entry) × point value − 2 × contracts × 3.75 = the ledger's P&L.
 
 ## Step 4 · The development plan
 
@@ -57,7 +57,7 @@ study idea_<slug> {
 
 ## Step 5 · Sanity comparison (the table must be in the rationale)
 
-Our base beside the author's numbers (`author_reported`): direction of the curve, largest drawdown's place, trades a year, win rate, net profit and drawdown on capital. Ours is usually worse with the same shape (costs, fixed sizing, no compounding). A different shape means a mis-read rule: fix it once (`# revises: <hash>`), re-check, re-run (the retry execution). When the author reported nothing, say so.
+Our base beside the author's numbers (`author_reported`): direction of the curve, largest drawdown's place, trades a year, win rate, net profit and drawdown on capital. Ours is usually worse with the same shape (costs, fixed sizing, no compounding). A different shape means a mis-read rule: fix it (`# revises: <hash>`), re-check, re-run; up to three revisions, each with a note of what changed and why. When the author reported nothing, say so.
 
 ## Step 6 · Forward plan and submit
 

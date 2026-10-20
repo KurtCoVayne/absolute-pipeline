@@ -17,12 +17,12 @@ caps   = ["docs.read", "abt.catalog", "abt.query", "abt.check", "abt.plan", "abt
 [budget]
 tokens_in = 1_500_000   # weighted: uncached input in full, cached input at a tenth (budget.py); money_usd is the binding cap
 tokens_out = 60_000
-tool_calls = 100
+tool_calls = 200
 wall_s = 7200           # until daily programs bind the daily level: a house-universe plan streams 34 roots of minute bars and takes over an hour; money_usd stays the binding cap
-money_usd = 2.00
-plan_runs   = 4          # plan executions the gateway admits in this job: the translation check, the development plan, one retry or one execution-variant plan, and the forward plan's check
+money_usd = 3.00          # the owner, Oct 20: spend more if it gets results
+plan_runs   = 10         # plan executions in this job: translation checks and their revisions (up to three), the development plan, a retry, the forward plan's check
 grid_points = 25         # the sensitivity grid's size
-checks      = 8          # abt check iterations before the job fails as could_not_check
+checks      = 12         # abt check iterations before the job fails as could_not_check
 
 [output]
 records = ["Submission"]

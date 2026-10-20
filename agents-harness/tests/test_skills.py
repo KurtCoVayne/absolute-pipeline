@@ -52,7 +52,7 @@ def test_caps_and_budgets_are_the_plans() -> None:
     assert triage.caps == ("docs.read", "notes.write") and triage.budget["money_usd"] <= 0.002
     assert analyst.caps == ("docs.read", "abt.catalog", "notes.write") and analyst.budget["money_usd"] <= 0.50
     assert quant.caps == ("docs.read", "abt.catalog", "abt.query", "abt.check", "abt.plan", "abt.report", "abt.query_run", "abt.submit", "notes.write")
-    assert quant.budget["money_usd"] <= 2.00 and quant.budget["plan_runs"] == 4 and quant.budget["grid_points"] == 25 and quant.budget["checks"] == 8
+    assert quant.budget["money_usd"] <= 3.00 and quant.budget["plan_runs"] == 10 and quant.budget["grid_points"] == 25 and quant.budget["checks"] == 12
     assert triage.records == ("Triage",) and analyst.records == ("Hypothesis",) and quant.records == ("Submission",)
     assert "provenance.write" not in CLOSED_CAPS
 
