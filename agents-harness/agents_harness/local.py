@@ -166,8 +166,8 @@ class LocalAbt:
         # Norgate's equities: every US list and ETF from 1990, and the daily index series, on their own service.
         # Off (the S&P 500 since 2014 in the main store) until the equity service's memory is bounded: ABT_EQUITY_FULL=1.
         self.equity_full = os.environ.get("ABT_EQUITY_FULL") == "1"
-        self.equity_data = os.environ.get("ABT_DATA_EQUITY", "/srv/absolute/run/equities.sock") if self.equity_full else self.data
-        self.equity_store = os.environ.get("ABT_STORE_EQUITY", "/srv/absolute/store-full") if self.equity_full else self.store
+        self.equity_data = os.environ.get("ABT_DATA_EQUITY") or ("/srv/absolute/run/equities.sock" if self.equity_full else "/srv/absolute/run/data.sock")
+        self.equity_store = os.environ.get("ABT_STORE_EQUITY") or ("/srv/absolute/store-full" if self.equity_full else "/srv/absolute/store")
         self.work = work or Path(os.environ.get("ABT_WORK", "/tmp/abt-work"))
         self.work.mkdir(parents=True, exist_ok=True)
         self.roots = [r for r in os.environ.get("ABT_ROOTS", "").split(",") if r]
