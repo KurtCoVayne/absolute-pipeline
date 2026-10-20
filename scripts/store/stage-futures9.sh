@@ -14,6 +14,10 @@
 set -uo pipefail
 export B=${B:-/srv/absolute/absolute-backtest/target/release/abt-data}
 export STORE=/srv/absolute/store-futures LOGS=/srv/absolute/logs/futures HEADROOM=8
+# E-122 (an ingest builds only the instruments it writes): every ingest and consolidation in a
+# fixed 12 GB scope, started once 16 GB are available, never retried (the coordinators, 15:15).
+export CAP_GB=${CAP_GB:-12} GATE_GB=${GATE_GB:-16} MAX_TRIES=${MAX_TRIES:-1}
+MIN_DISK_GB=${MIN_DISK_GB:-12}
 S=/srv/absolute/full/stage-full.sh
 PEAKS=/srv/absolute/full/peaks.txt
 QUEUE_FILE=/srv/absolute/full/queue.txt
@@ -46,17 +50,18 @@ snapshot() { # tag: a new numbered directory (see stage-futures6.sh), reviewed
   [ -d "$old" ] && [ "$(readlink -f "$old")" != "$cur" ] && rm -rf "$old"
 }
 consolidate() { # job name, relation: under the lock, in a scope of the last measured peak plus 8 GB
-  local tag=$1 rel=$2 peak code rss t0
+  local tag=$1 rel=$2 peak code rss t0 cap
   peak=$(peak_of "cons-$rel" 18)
   exec 9>>/srv/absolute/full/ingest.lock; flock 9
-  memwait $(( peak + 2 ))
+  memwait "${GATE_GB:-$(( peak + 2 ))}"
+  cap=${CAP_GB:-$(( peak + 8 ))}
   t0=$(date +%s)
-  sudo systemd-run --scope -p MemoryMax=$(( peak + 8 ))G -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
+  sudo systemd-run --scope -p MemoryMax=${cap}G -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
     /usr/bin/time -v eatmydata "$B" consolidate --store "$STORE" "$rel" > "$LOGS/cons-$tag-$rel.log" 2> "$LOGS/cons-$tag-$rel.time"
   code=$?
   flock -u 9
   rss=$(grep 'Maximum resident' "$LOGS/cons-$tag-$rel.time" | awk '{print $NF}')
-  echo "cons-$tag-$rel exit $code wall $(( $(date +%s) - t0 ))s rss_kb $rss cap $(( peak + 8 ))G $(date -u +%FT%TZ)" | tee -a "$LOGS/summary.log"
+  echo "cons-$tag-$rel exit $code wall $(( $(date +%s) - t0 ))s rss_kb $rss cap ${cap}G $(date -u +%FT%TZ)" | tee -a "$LOGS/summary.log"
   [ "$code" = 0 ] && [ -n "$rss" ] && echo "cons-$rel $(( (rss + 1048575) / 1048576 ))" >> "$PEAKS"
   return "$code"
 }
@@ -72,8 +77,10 @@ last=$(grep -E '^[a-z]+-[A-Za-z0-9]+ exit 0' "$LOGS/summary.log" | tail -1 | gre
 done_n=0
 while job=$(next_job) && [ -n "$job" ]; do
   phase=${job%%:*} r=${job#*:} name=${job%%:*}-${job#*:}
+  [ "$(df -BG --output=avail /srv | tail -1 | tr -dc 0-9)" -ge "$MIN_DISK_GB" ] || stop "under $MIN_DISK_GB GB of disk before $name"
   p=$(peak_of "$name" 0); [ "$p" -lt $(( last + 1 )) ] && echo "$name $(( last + 1 ))" >> "$PEAKS"
   ONLY="$r" bash $S "$phase"
+  grep "^$name exit" "$LOGS/summary.log" | tail -1 | grep -qE "exit (137|143) " && stop "$name killed at its ${CAP_GB:-} GB scope"
   grep -q "^$name exit 0" "$LOGS/summary.log" || { echo "== $name skipped: did not go in (no files, or refused) $(date -u +%FT%TZ)" | tee -a "$LOGS/summary.log"; continue; }
   last=$(peak_of "$name" "$last")
   k=$(kept_of "$name"); kept=$(( kept + ${k:-0} ))

@@ -42,19 +42,21 @@ step() { # name, args...
   # of its peak plus 4 GB, so it can never take the data service down; killed
   # at the scope, it runs again with 8 GB more (twice at most). One ingest of
   # these drivers at a time, whichever store: two waiting on memory would
-  # both see it free and start together.
-  local peak code t0 rss try
+  # both see it free and start together. CAP_GB and GATE_GB fix the scope and
+  # the wait instead (and MAX_TRIES the attempts).
+  local peak code t0 rss try cap
   peak=$(peak_gb "$name")
-  for try in 1 2 3; do
+  for try in $(seq 1 "${MAX_TRIES:-3}"); do
     exec 9>>/srv/absolute/full/ingest.lock; flock 9
-    memwait $(( peak + 2 ))
+    memwait "${GATE_GB:-$(( peak + 2 ))}"
+    cap=${CAP_GB:-$(( peak + ${HEADROOM:-4} ))}
     t0=$(date +%s)
-    sudo systemd-run --scope -p MemoryMax=$(( peak + ${HEADROOM:-4} ))G -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
+    sudo systemd-run --scope -p MemoryMax=${cap}G -p MemorySwapMax=0 --uid=ubuntu --gid=ubuntu --quiet \
       /usr/bin/time -v eatmydata "$B" ingest --store "$STORE" "$@" > "$LOGS/$name.log" 2> "$LOGS/$name.time"
     code=$?
     flock -u 9
     rss=$(grep 'Maximum resident' "$LOGS/$name.time" | awk '{print $NF}')
-    echo "$name exit $code wall $(( $(date +%s) - t0 ))s rss_kb $rss cap $(( peak + ${HEADROOM:-4} ))G $(date -u +%FT%TZ)" | tee -a "$SUM"
+    echo "$name exit $code wall $(( $(date +%s) - t0 ))s rss_kb $rss cap ${cap}G $(date -u +%FT%TZ)" | tee -a "$SUM"
     grep -v '^\s' "$LOGS/$name.time" | grep -i -E 'error|refus|killed' | head -3
     case $code in 137|143) peak=$(( peak + 8 ));; *) break;; esac
   done
