@@ -115,7 +115,7 @@ decisions {
   decide(T, hold(A, W))   :- long_leg(A, T), n_long(T, N), W = 0.4 / N.                 # a target weight of capital
   decide(T, hold(A, 0))   :- bar(T), month_start(T), in_book(A, T), not long_leg(A, T).
   decide(T, hold(A, N))   :- leg(A, T, Dir, V), point_value(A, T, PV), N = Dir * risk / (V * PV).   # a target quantity
-  decide(T, trade(A, N) stop(P)) :- …                                                   # an order on the decision: market | moo | moc | moo_moc | limit(P[, TIF]) | stop(P[, TIF])
+  decide(T, hold(A, Q, stop(P, day))) :- …                                              # an order on the decision, as the last argument: market | moo | moc | moo_moc | limit(P[, TIF]) | stop(P[, TIF])
 }
 ```
 

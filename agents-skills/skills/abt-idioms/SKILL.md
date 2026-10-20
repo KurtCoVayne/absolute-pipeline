@@ -126,9 +126,13 @@ wwma(A, W, M) :- wnum(A, W, K), SW = sum(P * ((J - K + n) / n)) over (W1 in rows
 
 A 200-week average needs four years of warm-up: start the data four years before the window (Norgate's daily roots go back decades; BTC on the minute store starts 2017-12-18, so its first four years are warm-up).
 
-## 6. Actual contracts, spreads and ratios (checked)
+## 6. Actual prices, spreads and ratios
 
-The store holds every contract's own bars as well as the back-adjusted root. The kernel's `contract(C, T, A, Expiry, PointValue)` names the contract `C` the root `A`'s continuous series holds at `T`; its own close is the actual (unadjusted) price. House rules §7: levels, spreads and ratios on actual contracts, P&L on the continuous roots.
+House rules §7: levels, spreads and ratios on actual prices, P&L on the back-adjusted continuous roots. A back-adjusted series' old levels drift far from the real prices (HO's continuous close was negative in 2013), so a rule that reads a level, a ratio, a percentage or a log on it is wrong there; differences and P&L are right.
+
+**Daily (use this):** Norgate's unadjusted continuous series `<ROOT>_U` (the front contract's own prices, with the jump at each roll) sit beside `<ROOT>_N` in the daily store: read levels and ratios on `CL_U`, trade and size on `CL_N`. A ratio or a percentage change across a roll date on `_U` includes the roll jump: compute it within one contract (skip the roll session) or on `_N`'s differences.
+
+**Not working today (an engine defect, reported Oct 20):** the form below, through the kernel's `contract(C, T, A, Expiry, PointValue)`, returns no rows on either store; don't use it until it's fixed.
 
 ```
 rel actual_close(A: Future, @T, P: Price<USD>)       # the held contract's own close, on the root's session
