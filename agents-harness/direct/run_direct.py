@@ -82,7 +82,7 @@ def status(d: Path, state: str, stage: str, reason: str = "", **extra: Any) -> N
     write(d, "status.json", {"state": state, "stage": stage, "reason": reason, "updated": now(), **extra})
 
 
-POST_LISTS = "docs/design/fixtures/seed-posts.tsv,docs/design/fixtures/campaign-2-posts.tsv"
+POST_LISTS = "docs/design/fixtures/seed-posts.tsv,docs/design/fixtures/campaign-2-posts.tsv,docs/design/fixtures/campaign-3-posts.tsv"
 
 
 def seed_rows(lists: str = POST_LISTS) -> list[dict[str, str]]:

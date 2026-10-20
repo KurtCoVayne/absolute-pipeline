@@ -6,7 +6,7 @@
 #   bash deploy/site-loop.sh loop   # the loop itself (started by the line above)
 set -uo pipefail
 S=/srv/absolute; P=$S/absolute-pipeline
-build() { python3 -I $P/agents-harness/direct/site.py --seeds $P/docs/design/fixtures/seed-posts.tsv,$P/docs/design/fixtures/campaign-2-posts.tsv --out $S/direct/out --site $S/site --mirror $S/data/seed; }
+build() { python3 -I $P/agents-harness/direct/site.py --seeds $P/docs/design/fixtures/seed-posts.tsv,$P/docs/design/fixtures/campaign-2-posts.tsv,$P/docs/design/fixtures/campaign-3-posts.tsv --out $S/direct/out --site $S/site --mirror $S/data/seed; }
 if [ "${1:-}" = "loop" ]; then
   while true; do build; sleep 60; done
 fi

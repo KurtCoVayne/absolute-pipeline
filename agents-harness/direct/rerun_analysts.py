@@ -37,7 +37,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -467,6 +467,20 @@ def reread(post_id: str, doc: dict[str, Any], h: str, data_map: str, roots: list
     return f"no hypothesis: {reason[:160]}"
 
 
+def horizon(doc: dict[str, Any]) -> str:
+    """A post no analyst job has read yet (campaign 3): H = max(fixed_at, the analyst's knowledge
+    cutoff), rounded up to the whole second (PL-D11, as pipeline-run's `horizon`)."""
+    cutoff = tomllib.loads((SKILLS / "definitions" / "analyst.toml").read_text("utf-8"))["agent"]["model"]["knowledge_cutoff"]
+    m = re.match(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?Z", str(doc.get("fixed_at") or ""))
+    if not m:
+        raise ValueError(f"fixed_at {doc.get('fixed_at')!r} is not a time")
+    t = datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    if m.group(2) and int(m.group(2)[1:] or 0) > 0:
+        t += timedelta(seconds=1)
+    t = max(t, datetime.strptime(cutoff, "%Y-%m-%d").replace(tzinfo=timezone.utc))
+    return t.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def candidates(only: set[str]) -> list[str]:
     out = []
     for d in sorted(OUT.iterdir()):
@@ -505,7 +519,7 @@ def main() -> int:
             if job.get("stage") == "analyze" and docs.get(pid, {}).get("id") in (job.get("inputs") or []):
                 h_of[pid] = str(job.get("h") or "")
     with ThreadPoolExecutor(max_workers=max(1, a.parallel)) as ex:
-        futs = {pid: ex.submit(reread, pid, docs[pid], h_of.get(pid) or str(docs[pid].get("fixed_at")), data_map, roots, key, xai_key, a.dry_run) for pid in posts if pid in docs}
+        futs = {pid: ex.submit(reread, pid, docs[pid], h_of.get(pid) or horizon(docs[pid]), data_map, roots, key, xai_key, a.dry_run) for pid in posts if pid in docs}
         for pid, f in futs.items():
             try:
                 r = f.result()
