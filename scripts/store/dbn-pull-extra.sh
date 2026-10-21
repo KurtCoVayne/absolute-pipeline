@@ -10,6 +10,7 @@ W=/srv/absolute/dbn-pull; CACHE=/srv/absolute/data/vendor/dbn-extra; LOG=/srv/ab
 BUCKET=s3://dbn-futures-094828274452
 GLBX="EMD YM MYM M2K MBT MET KE ZO ZR PA SR3 GD LBR 6A 6S"; IFUS="DX OJ"
 END=2026-10-19
+MANIFEST=${MANIFEST:-manifest-additions-2026-10-20.csv}  # a later batch names its own (…-20b.csv)
 mkdir -p "$CACHE" "$LOG"
 case "${1:-pull}" in
 pull)
@@ -22,19 +23,20 @@ pull)
 upload)
   # New keys only: a root's prefix is uploaded only when the bucket holds nothing under it.
   cd "$CACHE"
-  find . -type f -name '*.parquet' | sed 's|^\./||' | sort | while read -r k; do
-    printf '%s,%s,%s\n' "$k" "$(stat -c %s "$k")" "$(sha256sum "$k" | cut -d' ' -f1)"
-  done > $LOG/manifest-additions.csv
+  : > $LOG/manifest-additions.csv
+  row() { printf '%s,%s,%s\n' "$1" "$(stat -c %s "$1")" "$(sha256sum "$1" | cut -d' ' -f1)" >> $LOG/manifest-additions.csv; }
   for d in */ohlcv-1m/*.FUT; do
     if [ -n "$(aws s3 ls "$BUCKET/$d/" | head -1)" ]; then echo "exists, skipped: $d" | tee -a $LOG/upload.log; continue; fi
+    for f in $(find "$d" -type f -name '*.parquet' | sort); do row "$f"; done
     aws s3 sync "$d" "$BUCKET/$d/" --only-show-errors >> $LOG/upload.log 2>&1 && echo "uploaded $d $(ls $d | wc -l) files"
   done
   for f in */definition/*.parquet; do
     if aws s3api head-object --bucket dbn-futures-094828274452 --key "$f" >/dev/null 2>&1; then echo "exists, skipped: $f" | tee -a $LOG/upload.log; continue; fi
+    row "$f"
     aws s3 cp "$f" "$BUCKET/$f" --only-show-errors >> $LOG/upload.log 2>&1 && echo "uploaded $f"
   done
-  { echo "path,bytes,sha256"; cat $LOG/manifest-additions.csv; } > $LOG/manifest-additions-2026-10-20.csv
-  aws s3 cp $LOG/manifest-additions-2026-10-20.csv "$BUCKET/manifest-additions-2026-10-20.csv" --only-show-errors
+  { echo "path,bytes,sha256"; cat $LOG/manifest-additions.csv; } > $LOG/$MANIFEST
+  aws s3 cp $LOG/$MANIFEST "$BUCKET/$MANIFEST" --only-show-errors
   echo "manifest: $(wc -l < $LOG/manifest-additions.csv) files"
   ;;
 verify)

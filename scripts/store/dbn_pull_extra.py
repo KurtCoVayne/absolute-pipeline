@@ -125,6 +125,6 @@ def one(line: str) -> str:
 
 
 jobs = [ln for ln in (Path(__file__).parent / "jobs.txt").read_text().splitlines() if ln.strip()]
-with ThreadPoolExecutor(max_workers=3) as ex:
+with ThreadPoolExecutor(max_workers=int(os.environ.get("WORKERS", "3"))) as ex:
     for r in ex.map(one, jobs):
         print(r, flush=True)
