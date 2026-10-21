@@ -44,7 +44,7 @@ def fetch(client: db.Historical, dataset: str, root: str, schema: str, s: str, e
                 return pd.DataFrame()  # not listed in this month
             if attempt == 5:
                 raise
-        except db.BentoError:  # a server error or a stream cut short: retry
+        except Exception:  # noqa: BLE001 - a server error, a stream cut short, a read timeout: retry
             if attempt == 5:
                 raise
         time.sleep(15 * (attempt + 1))
