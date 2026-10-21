@@ -81,7 +81,11 @@ def bars(client: db.Historical, root: str, dataset: str, start: str) -> tuple[in
     out_dir = layout.bars_dir(dataset, root)
     out_dir.mkdir(parents=True, exist_ok=True)
     written = kept = rows = 0
+    have = {f.stem[:7] for f in out_dir.glob("*.parquet")}
     for s, e in months(start, end):
+        # A rerun skips a month already on disk (any day of it), except the last one, which may be partial.
+        if s[:7] in have and s[:7] != max(have):
+            continue
         df = fetch(client, dataset, root, "ohlcv-1m", s, e)
         if df.empty:
             continue
