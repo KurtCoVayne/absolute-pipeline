@@ -44,7 +44,7 @@ def fetch(client: db.Historical, dataset: str, root: str, schema: str, s: str, e
                 return pd.DataFrame()  # not listed in this month
             if attempt == 5:
                 raise
-        except db.BentoServerError:
+        except db.BentoError:  # a server error or a stream cut short: retry
             if attempt == 5:
                 raise
         time.sleep(15 * (attempt + 1))
@@ -109,7 +109,9 @@ def one(line: str) -> str:
     dataset, root, start = line.split()
     client = db.Historical()  # DATABENTO_API_KEY from env
     try:
-        n_def = definitions(client, root, dataset, start)
+        # SKIP_DEFS=1: bars only, while Databento's definition requests time out (status "partially
+        # degraded", Oct 21); the definitions follow in a later run.
+        n_def = 0 if os.environ.get("SKIP_DEFS") == "1" else definitions(client, root, dataset, start)
         w, k, r = bars(client, root, dataset, start)
         return f"{dataset} {root}: {n_def} contracts, {w} days written, {k} kept, {r} rows"
     except ingest.CostGate as e:
