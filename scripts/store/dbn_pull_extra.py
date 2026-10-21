@@ -20,6 +20,7 @@ import pandas as pd
 from d20research.data import ingest, layout
 
 cache, end = Path(sys.argv[1]), sys.argv[2]
+SKIPPED: list[str] = []  # definition months refused after every retry, reported at the end
 layout.CACHE_ROOT = cache  # bars_dir/definition_path read it at call time
 
 
@@ -54,7 +55,11 @@ def fetch(client: db.Historical, dataset: str, root: str, schema: str, s: str, e
 def definitions(client: db.Historical, root: str, dataset: str, start: str) -> int:
     frames = []
     for s, e in months(start, end):
-        df = fetch(client, dataset, root, "definition", s, e)
+        try:
+            df = fetch(client, dataset, root, "definition", s, e)
+        except Exception as x:  # noqa: BLE001 - a month Databento keeps refusing: the contracts it lists also
+            SKIPPED.append(f"{root} {s[:7]} ({type(x).__name__})")  # appear in the months around it
+            continue
         if df.empty:
             continue
         df = df.reset_index()
@@ -128,3 +133,5 @@ jobs = [ln for ln in (Path(__file__).parent / "jobs.txt").read_text().splitlines
 with ThreadPoolExecutor(max_workers=int(os.environ.get("WORKERS", "3"))) as ex:
     for r in ex.map(one, jobs):
         print(r, flush=True)
+if SKIPPED:
+    print("definition months skipped after retries: " + ", ".join(SKIPPED), flush=True)
